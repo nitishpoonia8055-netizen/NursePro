@@ -10,19 +10,18 @@ import {
   Moon,
   Sun,
   Stethoscope,
-  Target,
-  Trophy
+  Target
 } from 'lucide-react';
-import { AppState, AppView, Question, UserStats } from './types.ts';
-import { SUBJECTS, INITIAL_QUESTIONS } from './constants.ts';
+import { AppState, AppView, Question, UserStats } from './types';
+import { INITIAL_QUESTIONS } from './constants';
 
 // Components
-import Dashboard from './components/Dashboard.tsx';
-import PracticeMode from './components/PracticeMode.tsx';
-import AIGenerator from './components/AIGenerator.tsx';
-import SubjectBank from './components/SubjectBank.tsx';
-import Settings from './components/Settings.tsx';
-import Analytics from './components/Analytics.tsx';
+import Dashboard from './components/Dashboard';
+import PracticeMode from './components/PracticeMode';
+import AIGenerator from './components/AIGenerator';
+import SubjectBank from './components/SubjectBank';
+import Settings from './components/Settings';
+import Analytics from './components/Analytics';
 
 const App: React.FC = () => {
   const [state, setState] = useState<AppState>(() => {
@@ -121,7 +120,7 @@ const App: React.FC = () => {
         const filtered = state.currentSubject 
           ? state.questions.filter(q => q.subject === state.currentSubject)
           : state.questions;
-        const set = filtered.sort(() => 0.5 - Math.random()).slice(0, count);
+        const set = [...filtered].sort(() => 0.5 - Math.random()).slice(0, count);
         return <PracticeMode questions={set} isMock={isMock} onFinish={() => setView('DASHBOARD')} onAnswer={updateStats} />;
       case 'FORGE': return <AIGenerator onGenerated={(qs) => setState(p => ({ ...p, questions: [...qs, ...p.questions] }))} setView={setView} />;
       case 'ANALYTICS': return <Analytics stats={state.stats} questions={state.questions} />;
@@ -132,7 +131,6 @@ const App: React.FC = () => {
 
   return (
     <div className={`min-h-screen flex ${state.darkMode ? 'dark' : ''}`}>
-      {/* Sidebar - Desktop */}
       <aside className={`fixed inset-y-0 left-0 w-[var(--sidebar-w)] glass-card border-r border-slate-200 dark:border-slate-800 p-8 z-50 lg:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out`}>
         <div className="flex flex-col h-full">
           <div className="flex items-center gap-3 mb-12">
@@ -188,9 +186,7 @@ const App: React.FC = () => {
         </div>
       </aside>
 
-      {/* Main Content */}
       <main className="flex-1 lg:ml-[var(--sidebar-w)] transition-all duration-300">
-        {/* Header Mobile */}
         <div className="lg:hidden flex items-center justify-between p-4 sticky top-0 z-40 glass-card border-b border-slate-200 dark:border-slate-800">
            <div className="flex items-center gap-2">
               <Stethoscope className="text-primary" size={24} />
@@ -208,7 +204,6 @@ const App: React.FC = () => {
         </div>
       </main>
 
-      {/* Mobile FAB Backdrop */}
       {isSidebarOpen && (
         <div 
           className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[45] lg:hidden"
