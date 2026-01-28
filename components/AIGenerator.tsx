@@ -14,7 +14,6 @@ const AIGenerator: React.FC<AIGeneratorProps> = ({ onGenerated, setView }) => {
   const [subject, setSubject] = useState(SUBJECTS[0].name);
   const [topic, setTopic] = useState('');
   const [count, setCount] = useState(5);
-  // Fix: Set initial difficulty state to a valid Difficulty type member.
   const [difficulty, setDifficulty] = useState<Difficulty>('Intermediate');
   const [isGenerating, setIsGenerating] = useState(false);
   const [previewList, setPreviewList] = useState<Question[] | null>(null);
@@ -24,8 +23,12 @@ const AIGenerator: React.FC<AIGeneratorProps> = ({ onGenerated, setView }) => {
   useEffect(() => {
     const checkKey = async () => {
       if ((window as any).aistudio?.hasSelectedApiKey) {
-        const selected = await (window as any).aistudio.hasSelectedApiKey();
-        setHasKey(selected);
+        try {
+          const selected = await (window as any).aistudio.hasSelectedApiKey();
+          setHasKey(selected);
+        } catch (e) {
+          console.error("Error checking key selection:", e);
+        }
       }
     };
     checkKey();
@@ -33,9 +36,13 @@ const AIGenerator: React.FC<AIGeneratorProps> = ({ onGenerated, setView }) => {
 
   const handleOpenKeySelector = async () => {
     if ((window as any).aistudio?.openSelectKey) {
-      await (window as any).aistudio.openSelectKey();
-      setHasKey(true);
-      setError(null);
+      try {
+        await (window as any).aistudio.openSelectKey();
+        setHasKey(true);
+        setError(null);
+      } catch (e) {
+        console.error("Error opening key selector:", e);
+      }
     }
   };
 
@@ -46,12 +53,26 @@ const AIGenerator: React.FC<AIGeneratorProps> = ({ onGenerated, setView }) => {
       const qs = await forgeNursingQuestions(subject, count, difficulty, topic, 'gemini-3-flash-preview');
       setPreviewList(qs);
     } catch (err: any) {
-      const errorMessage = err.message || "";
+      console.error("Forge error:", err);
+      const errorMessage = err.message || String(err);
       const isQuota = errorMessage.includes("429") || errorMessage.toLowerCase().includes("quota");
       const isKeyError = errorMessage.includes("API_KEY") || errorMessage.includes("401");
+      const isNotFound = errorMessage.includes("Requested entity was not found");
+      
+      // Mandatory fallback for key issues per instructions
+      if (isNotFound && (window as any).aistudio?.openSelectKey) {
+        await handleOpenKeySelector();
+      }
+
       setError({
-        message: isQuota ? "Quota reached. Wait 60s or use a paid key." : "Generation failed. Check your network.",
-        needsKey: isKeyError || isQuota,
+        message: isQuota 
+          ? "Model quota reached. Please wait a minute or use a billing-enabled key." 
+          : isNotFound
+          ? "Resource not found. This often indicates an invalid or expired API key. Please re-select your key."
+          : isKeyError
+          ? "Authentication failed. Please select a valid Google Gemini API key."
+          : `Generation failed: ${errorMessage.substring(0, 100)}...`,
+        needsKey: isKeyError || isQuota || isNotFound,
         isQuota: isQuota
       });
     } finally {
@@ -119,11 +140,16 @@ const AIGenerator: React.FC<AIGeneratorProps> = ({ onGenerated, setView }) => {
           <div className={`p-4 border rounded-2xl text-sm ${error.isQuota ? 'bg-amber-50 border-amber-100 text-amber-800' : 'bg-rose-50 border-rose-100 text-rose-800'}`}>
             <div className="flex gap-3">
               <AlertCircle size={20} className="shrink-0" />
-              <div>
-                <p className="font-bold mb-1">{error.isQuota ? 'Quota Limit' : 'Error'}</p>
-                <p className="text-xs mb-3">{error.message}</p>
+              <div className="flex-1">
+                <p className="font-bold mb-1">{error.isQuota ? 'Quota Limit' : 'Clinical Forge Error'}</p>
+                <p className="text-xs mb-3 leading-relaxed">{error.message}</p>
                 {error.needsKey && (
-                  <button onClick={handleOpenKeySelector} className="text-xs bg-white px-3 py-1.5 rounded-lg border font-bold shadow-sm">Select Paid Key</button>
+                  <button 
+                    onClick={handleOpenKeySelector} 
+                    className="w-full sm:w-auto text-xs bg-white dark:bg-zinc-800 px-4 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 font-bold shadow-sm hover:bg-zinc-50 active:scale-95 transition-all"
+                  >
+                    Select/Update API Key
+                  </button>
                 )}
               </div>
             </div>
@@ -158,17 +184,13 @@ const AIGenerator: React.FC<AIGeneratorProps> = ({ onGenerated, setView }) => {
           <div>
             <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-3">Difficulty</label>
             <div className="flex bg-zinc-50 dark:bg-zinc-800 p-1 rounded-2xl">
-              {['Easy', 'Mod'].map(v => (
+              {['Beginner', 'Intermediate', 'Expert'].map(v => (
                 <button 
                   key={v} 
-                  onClick={() => setDifficulty(v === 'Mod' ? 'Intermediate' : 'Beginner')} 
-                  className={`flex-1 py-2 rounded-xl text-xs font-bold ${
-                    (v === 'Easy' && difficulty === 'Beginner') || (v === 'Mod' && difficulty === 'Intermediate')
-                      ? 'bg-white dark:bg-zinc-700 shadow-sm text-primary' 
-                      : 'text-zinc-400'
-                  }`}
+                  onClick={() => setDifficulty(v as Difficulty)} 
+                  className={`flex-1 py-2 rounded-xl text-[10px] font-bold ${difficulty === v ? 'bg-white dark:bg-zinc-700 shadow-sm text-primary' : 'text-zinc-400'}`}
                 >
-                  {v}
+                  {v === 'Intermediate' ? 'Mod' : v}
                 </button>
               ))}
             </div>
@@ -181,7 +203,7 @@ const AIGenerator: React.FC<AIGeneratorProps> = ({ onGenerated, setView }) => {
             type="text" 
             value={topic} 
             onChange={(e) => setTopic(e.target.value)} 
-            placeholder="e.g., Triage priority..." 
+            placeholder="e.g., Triage priority, IV infusion..." 
             className="w-full bg-zinc-50 dark:bg-zinc-800 border-none rounded-2xl p-4 text-sm font-medium outline-none focus:ring-2 focus:ring-primary" 
           />
         </div>
@@ -191,8 +213,14 @@ const AIGenerator: React.FC<AIGeneratorProps> = ({ onGenerated, setView }) => {
           disabled={isGenerating} 
           className="w-full h-14 bg-primary text-white rounded-2xl font-bold text-base flex items-center justify-center gap-3 shadow-xl shadow-primary/20 active:scale-[0.98] disabled:opacity-50 transition-all"
         >
-          {isGenerating ? <><Loader2 className="animate-spin" size={20} /> Forging...</> : <><Sparkles size={20} /> Forge Scenarios</>}
+          {isGenerating ? <><Loader2 className="animate-spin" size={20} /> Clinical Forging...</> : <><Sparkles size={20} /> Forge Scenarios</>}
         </button>
+        
+        <p className="text-[10px] text-zinc-400 text-center leading-relaxed">
+          Powered by Gemini 3 Flash. Ensure you have a valid API key with billing enabled for large quantity generation.
+          <br />
+          <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Billing Documentation</a>
+        </p>
       </div>
     </div>
   );
