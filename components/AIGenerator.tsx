@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Sparkles, Loader2, Play, ChevronLeft, Check, Trash2, Key, AlertCircle } from 'lucide-react';
 import { forgeNursingQuestions } from '../services/geminiService.ts';
-import { Question, AppView } from '../types.ts';
+import { Question, AppView, Difficulty } from '../types.ts';
 import { SUBJECTS } from '../constants.ts';
 
 interface AIGeneratorProps {
@@ -14,7 +14,8 @@ const AIGenerator: React.FC<AIGeneratorProps> = ({ onGenerated, setView }) => {
   const [subject, setSubject] = useState(SUBJECTS[0].name);
   const [topic, setTopic] = useState('');
   const [count, setCount] = useState(5);
-  const [difficulty, setDifficulty] = useState('Moderate');
+  // Fix: Set initial difficulty state to a valid Difficulty type member.
+  const [difficulty, setDifficulty] = useState<Difficulty>('Intermediate');
   const [isGenerating, setIsGenerating] = useState(false);
   const [previewList, setPreviewList] = useState<Question[] | null>(null);
   const [error, setError] = useState<{ message: string; needsKey: boolean; isQuota: boolean } | null>(null);
@@ -158,7 +159,17 @@ const AIGenerator: React.FC<AIGeneratorProps> = ({ onGenerated, setView }) => {
             <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-3">Difficulty</label>
             <div className="flex bg-zinc-50 dark:bg-zinc-800 p-1 rounded-2xl">
               {['Easy', 'Mod'].map(v => (
-                <button key={v} onClick={() => setDifficulty(v === 'Mod' ? 'Moderate' : 'Easy')} className={`flex-1 py-2 rounded-xl text-xs font-bold ${difficulty.startsWith(v) ? 'bg-white dark:bg-zinc-700 shadow-sm text-primary' : 'text-zinc-400'}`}>{v}</button>
+                <button 
+                  key={v} 
+                  onClick={() => setDifficulty(v === 'Mod' ? 'Intermediate' : 'Beginner')} 
+                  className={`flex-1 py-2 rounded-xl text-xs font-bold ${
+                    (v === 'Easy' && difficulty === 'Beginner') || (v === 'Mod' && difficulty === 'Intermediate')
+                      ? 'bg-white dark:bg-zinc-700 shadow-sm text-primary' 
+                      : 'text-zinc-400'
+                  }`}
+                >
+                  {v}
+                </button>
               ))}
             </div>
           </div>

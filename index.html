@@ -3,35 +3,50 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NursePro - Master the Clinical Edge</title>
-    <!-- Shim process for libraries that expect it -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>NursePro | Clinical Mastery Platform</title>
     <script>
         window.process = { env: { API_KEY: "" } };
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --clinical-bg: #f8fafc;
+            --sidebar-w: 280px;
+        }
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f8fafc;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--clinical-bg);
             -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-            -webkit-tap-highlight-color: transparent;
+            overflow-x: hidden;
         }
-        .dark {
-            background-color: #09090b;
+        .dark body {
+            background-color: #020617;
         }
-        @keyframes fade-in {
-            from { opacity: 0; transform: translateY(8px); }
-            to { opacity: 1; transform: translateY(0); }
+        .clinical-shadow {
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
         }
-        .animate-fade-in {
-            animation: fade-in 0.3s ease-out forwards;
+        .glass-card {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .dark .glass-card {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .animate-slide-up {
+            animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
-        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        #root { overflow-x: hidden; }
+        * { -webkit-tap-highlight-color: transparent; }
     </style>
     <script>
         tailwind.config = {
@@ -39,14 +54,14 @@
             theme: {
                 extend: {
                     colors: {
-                        primary: '#1E58FF',
-                        zinc: {
-                            950: '#09090b'
+                        primary: '#2563eb',
+                        slate: {
+                            950: '#020617'
                         }
                     },
                     borderRadius: {
-                        '4xl': '32px',
-                        '5xl': '40px'
+                        '3xl': '24px',
+                        '4xl': '32px'
                     }
                 }
             }
@@ -66,7 +81,7 @@
 }
 </script>
 </head>
-<body class="antialiased text-zinc-900 transition-colors duration-300">
+<body class="antialiased text-slate-900 dark:text-slate-100 transition-colors duration-500">
     <div id="root"></div>
     <script type="module" src="index.tsx"></script>
 </body>

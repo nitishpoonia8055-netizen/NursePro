@@ -1,19 +1,22 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   LayoutDashboard, 
-  Database, 
+  BarChart3, 
   Settings as SettingsIcon, 
   Sparkles,
   Menu,
   X,
   Moon,
   Sun,
-  Flame,
-  Zap
+  Stethoscope,
+  Target,
+  Trophy
 } from 'lucide-react';
 import { AppState, AppView, Question, UserStats } from './types.ts';
 import { SUBJECTS, INITIAL_QUESTIONS } from './constants.ts';
+
+// Components
 import Dashboard from './components/Dashboard.tsx';
 import PracticeMode from './components/PracticeMode.tsx';
 import AIGenerator from './components/AIGenerator.tsx';
@@ -23,24 +26,24 @@ import Analytics from './components/Analytics.tsx';
 
 const App: React.FC = () => {
   const [state, setState] = useState<AppState>(() => {
-    const saved = localStorage.getItem('nursepro_v2_state');
+    const saved = localStorage.getItem('nursepro_state_v2');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
         if (parsed && Array.isArray(parsed.questions)) return parsed;
-      } catch (e) {
-        console.error("State Load Error", e);
-      }
+      } catch (e) { console.error("Restore Error:", e); }
     }
     return {
       view: 'DASHBOARD',
-      questions: INITIAL_QUESTIONS.map(q => ({ ...q, practicedCount: 0 })),
+      questions: INITIAL_QUESTIONS,
       stats: {
         totalQuestionsAnswered: 0,
         correctAnswers: 0,
         masteryPoints: 0,
         subjectPerformance: {},
-        adpiePerformance: {}
+        adpiePerformance: {},
+        streak: 0,
+        lastActive: new Date().toISOString()
       },
       darkMode: false
     };
@@ -49,16 +52,17 @@ const App: React.FC = () => {
   const [isSidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
-    localStorage.setItem('nursepro_v2_state', JSON.stringify(state));
+    localStorage.setItem('nursepro_state_v2', JSON.stringify(state));
     document.documentElement.classList.toggle('dark', state.darkMode);
   }, [state]);
 
-  const setView = (view: AppView, subject?: string) => {
+  const setView = useCallback((view: AppView, subject?: string) => {
     setState(prev => ({ ...prev, view, currentSubject: subject }));
     setSidebarOpen(false);
-  };
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
 
-  const updateStats = (id: string | number, isCorrect: boolean) => {
+  const updateStats = useCallback((id: string | number, isCorrect: boolean) => {
     setState(prev => {
       const q = prev.questions.find(item => String(item.id) === String(id));
       if (!q) return prev;
@@ -70,13 +74,13 @@ const App: React.FC = () => {
       );
 
       const subj = q.subject;
-      const phase = q.adpiePhase || 'General';
+      const phase = q.adpiePhase;
       
       const newStats: UserStats = {
         ...prev.stats,
         totalQuestionsAnswered: prev.stats.totalQuestionsAnswered + 1,
         correctAnswers: prev.stats.correctAnswers + (isCorrect ? 1 : 0),
-        masteryPoints: prev.stats.masteryPoints + (isCorrect ? 25 : 5),
+        masteryPoints: prev.stats.masteryPoints + (isCorrect ? 50 : 10),
         subjectPerformance: {
           ...prev.stats.subjectPerformance,
           [subj]: {
@@ -90,12 +94,13 @@ const App: React.FC = () => {
             correct: (prev.stats.adpiePerformance[phase]?.correct || 0) + (isCorrect ? 1 : 0),
             total: (prev.stats.adpiePerformance[phase]?.total || 0) + 1
           }
-        }
+        },
+        lastActive: new Date().toISOString()
       };
 
       return { ...prev, questions: newQuestions, stats: newStats };
     });
-  };
+  }, []);
 
   const renderView = () => {
     switch (state.view) {
@@ -110,8 +115,14 @@ const App: React.FC = () => {
         />
       );
       case 'PRACTICE': 
-        const pool = state.currentSubject ? state.questions.filter(q => q.subject === state.currentSubject) : state.questions;
-        return <PracticeMode questions={pool.slice(0, 10)} onFinish={() => setView('DASHBOARD')} onAnswer={updateStats} />;
+      case 'MOCK_TEST':
+        const isMock = state.view === 'MOCK_TEST';
+        const count = isMock ? 25 : 10;
+        const filtered = state.currentSubject 
+          ? state.questions.filter(q => q.subject === state.currentSubject)
+          : state.questions;
+        const set = filtered.sort(() => 0.5 - Math.random()).slice(0, count);
+        return <PracticeMode questions={set} isMock={isMock} onFinish={() => setView('DASHBOARD')} onAnswer={updateStats} />;
       case 'FORGE': return <AIGenerator onGenerated={(qs) => setState(p => ({ ...p, questions: [...qs, ...p.questions] }))} setView={setView} />;
       case 'ANALYTICS': return <Analytics stats={state.stats} questions={state.questions} />;
       case 'SETTINGS': return <Settings state={state} onImport={s => setState(s)} onReset={() => { localStorage.clear(); window.location.reload(); }} />;
@@ -120,39 +131,90 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className={`min-h-screen flex transition-all ${state.darkMode ? 'bg-zinc-950 text-white' : 'bg-[#f8fafc] text-zinc-900'}`}>
-      <aside className={`fixed inset-y-0 left-0 w-72 bg-white dark:bg-zinc-900 border-r border-zinc-100 dark:border-zinc-800 p-6 z-[60] lg:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform`}>
+    <div className={`min-h-screen flex ${state.darkMode ? 'dark' : ''}`}>
+      {/* Sidebar - Desktop */}
+      <aside className={`fixed inset-y-0 left-0 w-[var(--sidebar-w)] glass-card border-r border-slate-200 dark:border-slate-800 p-8 z-50 lg:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out`}>
         <div className="flex flex-col h-full">
-          <div className="flex items-center gap-3 mb-10">
-            <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white shadow-lg"><Flame size={24} /></div>
-            <span className="font-bold text-2xl tracking-tight">NursePro</span>
+          <div className="flex items-center gap-3 mb-12">
+            <div className="w-11 h-11 bg-primary rounded-2xl flex items-center justify-center text-white shadow-xl shadow-primary/20">
+              <Stethoscope size={24} />
+            </div>
+            <div>
+              <h1 className="font-extrabold text-2xl tracking-tighter">NursePro</h1>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Clinical HQ</p>
+            </div>
           </div>
-          <nav className="flex-1 space-y-1.5">
+
+          <nav className="flex-1 space-y-2">
             {[
               { id: 'DASHBOARD', label: 'Command Center', icon: LayoutDashboard },
-              { id: 'ANALYTICS', label: 'Retention Matrix', icon: Database },
+              { id: 'ANALYTICS', label: 'Retention Matrix', icon: BarChart3 },
               { id: 'FORGE', label: 'AI Forge', icon: Sparkles },
-              { id: 'SETTINGS', label: 'System', icon: SettingsIcon },
+              { id: 'PRACTICE', label: 'Tactical Drill', icon: Target },
             ].map(item => (
               <button
                 key={item.id}
                 onClick={() => setView(item.id as AppView)}
-                className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl font-semibold transition-all ${state.view === item.id ? 'bg-primary text-white shadow-xl shadow-primary/20' : 'text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800'}`}
+                className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl font-bold transition-all duration-200 group ${
+                  state.view === item.id 
+                    ? 'bg-primary text-white shadow-xl shadow-primary/30 scale-[1.02]' 
+                    : 'text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                }`}
               >
-                <item.icon size={20} /> {item.label}
+                <item.icon size={20} className={state.view === item.id ? '' : 'group-hover:scale-110 transition-transform'} />
+                <span>{item.label}</span>
               </button>
             ))}
           </nav>
-          <button onClick={() => setState(p => ({ ...p, darkMode: !p.darkMode }))} className="mt-auto flex items-center gap-3 p-4 text-zinc-500 hover:text-primary transition-all">
-            {state.darkMode ? <Sun size={20} /> : <Moon size={20} />} 
-            <span className="font-semibold text-sm">{state.darkMode ? 'Light Mode' : 'Dark Mode'}</span>
-          </button>
+
+          <div className="pt-6 border-t border-slate-100 dark:border-slate-800 space-y-2">
+             <button
+              onClick={() => setState(p => ({ ...p, darkMode: !p.darkMode }))}
+              className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl font-bold text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all"
+            >
+              {state.darkMode ? <Sun size={20} /> : <Moon size={20} />}
+              <span>{state.darkMode ? 'Light Theme' : 'Dark Theme'}</span>
+            </button>
+            <button
+              onClick={() => setView('SETTINGS')}
+              className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl font-bold transition-all ${
+                state.view === 'SETTINGS' ? 'bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white' : 'text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/50'
+              }`}
+            >
+              <SettingsIcon size={20} />
+              <span>System Settings</span>
+            </button>
+          </div>
         </div>
       </aside>
-      <main className="flex-1 lg:ml-72 p-4 lg:p-10">{renderView()}</main>
-      <button onClick={() => setSidebarOpen(!isSidebarOpen)} className="lg:hidden fixed bottom-6 right-6 w-14 h-14 bg-primary text-white rounded-full shadow-2xl z-[100] flex items-center justify-center">
-        {isSidebarOpen ? <X /> : <Menu />}
-      </button>
+
+      {/* Main Content */}
+      <main className="flex-1 lg:ml-[var(--sidebar-w)] transition-all duration-300">
+        {/* Header Mobile */}
+        <div className="lg:hidden flex items-center justify-between p-4 sticky top-0 z-40 glass-card border-b border-slate-200 dark:border-slate-800">
+           <div className="flex items-center gap-2">
+              <Stethoscope className="text-primary" size={24} />
+              <span className="font-extrabold text-xl tracking-tighter">NursePro</span>
+           </div>
+           <button onClick={() => setSidebarOpen(true)} className="p-2 text-slate-500 bg-slate-100 dark:bg-slate-800 rounded-xl">
+              <Menu size={24} />
+           </button>
+        </div>
+
+        <div className="max-w-7xl mx-auto p-4 lg:p-12 min-h-screen">
+          <div className="animate-slide-up h-full">
+            {renderView()}
+          </div>
+        </div>
+      </main>
+
+      {/* Mobile FAB Backdrop */}
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[45] lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
     </div>
   );
 };

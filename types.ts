@@ -7,6 +7,8 @@ export enum AdpiePhase {
   EVALUATION = 'Evaluation'
 }
 
+export type Difficulty = 'Beginner' | 'Intermediate' | 'Expert';
+
 export interface Question {
   id: string | number;
   chapter: string;
@@ -15,8 +17,8 @@ export interface Question {
   correctIndex: number;
   explanation: string;
   subject: string; 
-  difficulty: 'Easy' | 'Moderate' | 'Hard';
-  adpiePhase?: AdpiePhase;
+  difficulty: Difficulty;
+  adpiePhase: AdpiePhase;
   practicedCount: number;
   lastResult?: 'correct' | 'incorrect';
 }
@@ -27,6 +29,8 @@ export interface UserStats {
   masteryPoints: number;
   subjectPerformance: Record<string, { correct: number; total: number }>;
   adpiePerformance: Record<string, { correct: number; total: number }>;
+  streak: number;
+  lastActive: string;
 }
 
 export type AppView = 'DASHBOARD' | 'SUBJECT_BANK' | 'PRACTICE' | 'MOCK_TEST' | 'FORGE' | 'ANALYTICS' | 'SETTINGS';

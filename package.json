@@ -5,7 +5,9 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "build": "true"
+    "dev": "npx serve .",
+    "build": "mkdir -p dist && cp -r index.html index.tsx App.tsx types.ts constants.ts components services metadata.json dist/ || true",
+    "preview": "npx serve dist"
   },
   "dependencies": {
     "react": "^18.3.1",
