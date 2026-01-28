@@ -1,12 +1,7 @@
 
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import App from './App';
-
-// Environment shim for process.env.API_KEY as per guidelines
-if (typeof (window as any).process === 'undefined') {
-  (window as any).process = { env: {} };
-}
+import App from './App.tsx';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {

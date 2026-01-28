@@ -12,21 +12,24 @@ import {
   Flame,
   Zap
 } from 'lucide-react';
-import { AppState, AppView, Question, UserStats } from './types';
-import { SUBJECTS, INITIAL_QUESTIONS } from './constants';
-import Dashboard from './components/Dashboard';
-import PracticeMode from './components/PracticeMode';
-import AIGenerator from './components/AIGenerator';
-import SubjectBank from './components/SubjectBank';
-import Settings from './components/Settings';
-import Analytics from './components/Analytics';
+import { AppState, AppView, Question, UserStats } from './types.ts';
+import { SUBJECTS, INITIAL_QUESTIONS } from './constants.ts';
+import Dashboard from './components/Dashboard.tsx';
+import PracticeMode from './components/PracticeMode.tsx';
+import AIGenerator from './components/AIGenerator.tsx';
+import SubjectBank from './components/SubjectBank.tsx';
+import Settings from './components/Settings.tsx';
+import Analytics from './components/Analytics.tsx';
 
 const App: React.FC = () => {
   const [state, setState] = useState<AppState>(() => {
     const saved = localStorage.getItem('nursepro_v2_state');
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        if (parsed && Array.isArray(parsed.questions)) {
+          return parsed;
+        }
       } catch (e) {
         console.error("Failed to load state", e);
       }
@@ -62,9 +65,9 @@ const App: React.FC = () => {
     window.scrollTo({ top: 0, behavior: 'instant' });
   };
 
-  const updateQuestionStats = (id: string, isCorrect: boolean) => {
+  const updateQuestionStats = (id: string | number, isCorrect: boolean) => {
     setState(prev => {
-      const qIndex = prev.questions.findIndex(q => q.id === id || q.id === Number(id));
+      const qIndex = prev.questions.findIndex(q => String(q.id) === String(id));
       if (qIndex === -1) return prev;
       
       const newQuestions = [...prev.questions];
@@ -106,7 +109,7 @@ const App: React.FC = () => {
   const deleteQuestion = (id: string | number) => {
     setState(prev => ({
       ...prev,
-      questions: prev.questions.filter(q => q.id !== id)
+      questions: prev.questions.filter(q => String(q.id) !== String(id))
     }));
   };
 
@@ -118,6 +121,7 @@ const App: React.FC = () => {
   };
 
   const getRandomQuestions = (allQuestions: Question[], count: number) => {
+    if (!allQuestions.length) return [];
     const shuffled = [...allQuestions].sort(() => 0.5 - Math.random());
     return shuffled.slice(0, count);
   };
