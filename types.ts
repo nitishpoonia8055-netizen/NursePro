@@ -7,11 +7,6 @@ export enum AdpiePhase {
   EVALUATION = 'Evaluation'
 }
 
-export interface Option {
-  id: string;
-  text: string;
-}
-
 export interface Question {
   id: string | number;
   chapter: string;
@@ -19,7 +14,6 @@ export interface Question {
   options: string[];
   correctIndex: number;
   explanation: string;
-  // App-specific metadata
   subject: string; 
   difficulty: 'Easy' | 'Moderate' | 'Hard';
   adpiePhase?: AdpiePhase;
@@ -32,6 +26,7 @@ export interface UserStats {
   correctAnswers: number;
   masteryPoints: number;
   subjectPerformance: Record<string, { correct: number; total: number }>;
+  adpiePerformance: Record<string, { correct: number; total: number }>;
 }
 
 export type AppView = 'DASHBOARD' | 'SUBJECT_BANK' | 'PRACTICE' | 'MOCK_TEST' | 'FORGE' | 'ANALYTICS' | 'SETTINGS';

@@ -1,15 +1,6 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
-import { Question } from '../types.ts';
-
-export function shuffleArray<T,>(array: T[]): T[] {
-  const newArray = [...array];
-  for (let i = newArray.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
-  }
-  return newArray;
-}
+import { Question, AdpiePhase } from '../types.ts';
 
 export async function forgeNursingQuestions(
   subject: string, 
@@ -20,18 +11,19 @@ export async function forgeNursingQuestions(
 ): Promise<Question[]> {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
-  const prompt = `Act as a Senior Consultant in Nursing Education. 
-  Generate ${count} high-fidelity technical nursing multiple-choice questions for the subject/chapter: ${subject}.
-  Difficulty level: ${difficulty}.
-  ${topic ? `Specifically focus on the clinical topic: ${topic}.` : ''}
+  const prompt = `Act as a Senior Nursing Education Consultant. 
+  Generate ${count} NCLEX-style technical nursing multiple-choice questions for the subject: ${subject}.
+  Difficulty: ${difficulty}.
+  ${topic ? `Clinical Focus: ${topic}.` : ''}
   
-  Strict requirements for JSON output:
-  - "id": a unique number or string
-  - "chapter": the subject name provided (${subject})
-  - "text": the clinical scenario question
-  - "options": an array of 4 strings
-  - "correctIndex": the 0-based index of the correct answer in the options array
-  - "explanation": a detailed clinical rationale explaining the physiological or protocol-based reason for the correct choice.`;
+  Each question MUST include:
+  1. A realistic clinical scenario.
+  2. Four distinct options (one correct, three plausible distractors).
+  3. A detailed rationale using evidence-based practice.
+  4. Categorization into one of the ADPIE phases (Assessment, Diagnosis, Planning, Implementation, Evaluation).
+
+  Return JSON array of objects with: 
+  id (number), chapter, text, options (array), correctIndex (0-3), explanation, adpiePhase (string from ADPIE list).`;
 
   try {
     const response = await ai.models.generateContent({
@@ -49,34 +41,26 @@ export async function forgeNursingQuestions(
               text: { type: Type.STRING },
               options: { type: Type.ARRAY, items: { type: Type.STRING } },
               correctIndex: { type: Type.INTEGER },
-              explanation: { type: Type.STRING }
+              explanation: { type: Type.STRING },
+              adpiePhase: { type: Type.STRING }
             },
-            required: ["id", "chapter", "text", "options", "correctIndex", "explanation"]
+            required: ["id", "chapter", "text", "options", "correctIndex", "explanation", "adpiePhase"]
           }
         }
       }
     });
 
-    const textOutput = response.text;
-    if (!textOutput) {
-      throw new Error("The model returned an empty response.");
-    }
-
-    const parsed: any[] = JSON.parse(textOutput.trim());
+    const parsed: any[] = JSON.parse(response.text.trim());
 
     return parsed.map((q, index) => ({
-      id: q.id || `ai-${Date.now()}-${index}`,
-      chapter: q.chapter,
-      text: q.text,
-      options: q.options,
-      correctIndex: q.correctIndex,
-      explanation: q.explanation,
+      ...q,
+      id: `forge-${Date.now()}-${index}`,
       subject: subject,
       difficulty: difficulty as any,
       practicedCount: 0
     }));
   } catch (error: any) {
-    console.error(`Error with model ${modelName}:`, error);
+    console.error("AI Forge Failure:", error);
     throw error;
   }
 }

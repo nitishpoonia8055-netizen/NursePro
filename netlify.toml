@@ -1,6 +1,6 @@
 
 [build]
-  command = "echo 'Static deployment'"
+  command = "true"
   publish = "."
 
 [[headers]]
