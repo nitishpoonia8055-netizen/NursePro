@@ -129,87 +129,104 @@ const App: React.FC = () => {
     }
   };
 
+  const navItems = [
+    { id: 'DASHBOARD', label: 'Command', icon: LayoutDashboard },
+    { id: 'ANALYTICS', label: 'Matrix', icon: BarChart3 },
+    { id: 'FORGE', label: 'Forge', icon: Sparkles },
+    { id: 'PRACTICE', label: 'Drill', icon: Target },
+  ];
+
   return (
-    <div className={`min-h-screen flex ${state.darkMode ? 'dark' : ''}`}>
-      <aside className={`fixed inset-y-0 left-0 w-[var(--sidebar-w)] glass-card border-r border-slate-200 dark:border-slate-800 p-8 z-50 lg:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out`}>
-        <div className="flex flex-col h-full">
-          <div className="flex items-center gap-3 mb-12">
-            <div className="w-11 h-11 bg-primary rounded-2xl flex items-center justify-center text-white shadow-xl shadow-primary/20">
-              <Stethoscope size={24} />
-            </div>
-            <div>
-              <h1 className="font-extrabold text-2xl tracking-tighter">NursePro</h1>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Clinical HQ</p>
-            </div>
+    <div className={`min-h-screen flex flex-col lg:flex-row ${state.darkMode ? 'dark' : ''}`}>
+      {/* Sidebar - Desktop Only */}
+      <aside className={`fixed inset-y-0 left-0 w-[var(--sidebar-w)] glass-card border-r border-slate-200 dark:border-slate-800 p-8 z-50 hidden lg:flex flex-col`}>
+        <div className="flex items-center gap-3 mb-12">
+          <div className="w-11 h-11 bg-primary rounded-2xl flex items-center justify-center text-white shadow-xl shadow-primary/20">
+            <Stethoscope size={24} />
           </div>
+          <div>
+            <h1 className="font-extrabold text-2xl tracking-tighter">NursePro</h1>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Clinical HQ</p>
+          </div>
+        </div>
 
-          <nav className="flex-1 space-y-2">
-            {[
-              { id: 'DASHBOARD', label: 'Command Center', icon: LayoutDashboard },
-              { id: 'ANALYTICS', label: 'Retention Matrix', icon: BarChart3 },
-              { id: 'FORGE', label: 'AI Forge', icon: Sparkles },
-              { id: 'PRACTICE', label: 'Tactical Drill', icon: Target },
-            ].map(item => (
-              <button
-                key={item.id}
-                onClick={() => setView(item.id as AppView)}
-                className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl font-bold transition-all duration-200 group ${
-                  state.view === item.id 
-                    ? 'bg-primary text-white shadow-xl shadow-primary/30 scale-[1.02]' 
-                    : 'text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/50'
-                }`}
-              >
-                <item.icon size={20} className={state.view === item.id ? '' : 'group-hover:scale-110 transition-transform'} />
-                <span>{item.label}</span>
-              </button>
-            ))}
-          </nav>
-
-          <div className="pt-6 border-t border-slate-100 dark:border-slate-800 space-y-2">
-             <button
-              onClick={() => setState(p => ({ ...p, darkMode: !p.darkMode }))}
-              className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl font-bold text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all"
-            >
-              {state.darkMode ? <Sun size={20} /> : <Moon size={20} />}
-              <span>{state.darkMode ? 'Light Theme' : 'Dark Theme'}</span>
-            </button>
+        <nav className="flex-1 space-y-2">
+          {navItems.map(item => (
             <button
-              onClick={() => setView('SETTINGS')}
-              className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl font-bold transition-all ${
-                state.view === 'SETTINGS' ? 'bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white' : 'text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/50'
+              key={item.id}
+              onClick={() => setView(item.id as AppView)}
+              className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl font-bold transition-all duration-200 group ${
+                state.view === item.id 
+                  ? 'bg-primary text-white shadow-xl shadow-primary/30 scale-[1.02]' 
+                  : 'text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/50'
               }`}
             >
-              <SettingsIcon size={20} />
-              <span>System Settings</span>
+              <item.icon size={20} className={state.view === item.id ? '' : 'group-hover:scale-110 transition-transform'} />
+              <span>{item.label} Center</span>
             </button>
-          </div>
+          ))}
+        </nav>
+
+        <div className="pt-6 border-t border-slate-100 dark:border-slate-800 space-y-2">
+           <button
+            onClick={() => setState(p => ({ ...p, darkMode: !p.darkMode }))}
+            className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl font-bold text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all"
+          >
+            {state.darkMode ? <Sun size={20} /> : <Moon size={20} />}
+            <span>{state.darkMode ? 'Light Theme' : 'Dark Theme'}</span>
+          </button>
+          <button
+            onClick={() => setView('SETTINGS')}
+            className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl font-bold transition-all ${
+              state.view === 'SETTINGS' ? 'bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white' : 'text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/50'
+            }`}
+          >
+            <SettingsIcon size={20} />
+            <span>Settings</span>
+          </button>
         </div>
       </aside>
 
-      <main className="flex-1 lg:ml-[var(--sidebar-w)] transition-all duration-300">
-        <div className="lg:hidden flex items-center justify-between p-4 sticky top-0 z-40 glass-card border-b border-slate-200 dark:border-slate-800">
+      {/* Main Content Area */}
+      <main className="flex-1 lg:ml-[var(--sidebar-w)] pb-24 lg:pb-0 min-h-screen">
+        {/* Mobile Header */}
+        <div className="lg:hidden flex items-center justify-between px-6 py-4 sticky top-0 z-40 bg-white/80 dark:bg-slate-950/80 backdrop-blur-lg border-b border-slate-200 dark:border-slate-800">
            <div className="flex items-center gap-2">
               <Stethoscope className="text-primary" size={24} />
               <span className="font-extrabold text-xl tracking-tighter">NursePro</span>
            </div>
-           <button onClick={() => setSidebarOpen(true)} className="p-2 text-slate-500 bg-slate-100 dark:bg-slate-800 rounded-xl">
-              <Menu size={24} />
+           <button onClick={() => setView('SETTINGS')} className="p-2 text-slate-500 hover:text-primary transition-colors">
+              <SettingsIcon size={22} />
            </button>
         </div>
 
-        <div className="max-w-7xl mx-auto p-4 lg:p-12 min-h-screen">
-          <div className="animate-slide-up h-full">
+        <div className="max-w-7xl mx-auto p-4 lg:p-12">
+          <div className="animate-slide-up">
             {renderView()}
           </div>
         </div>
       </main>
 
-      {isSidebarOpen && (
-        <div 
-          className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[45] lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
+      {/* Mobile Bottom Navigation */}
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-slate-950/90 backdrop-blur-2xl border-t border-slate-200 dark:border-slate-800 z-50 px-4 py-2 flex items-center justify-around pb-[env(safe-area-inset-bottom,12px)]">
+        {navItems.map(item => {
+          const isActive = state.view === item.id;
+          return (
+            <button
+              key={item.id}
+              onClick={() => setView(item.id as AppView)}
+              className={`flex flex-col items-center gap-1 p-2 transition-all min-w-[64px] ${
+                isActive ? 'text-primary' : 'text-slate-400'
+              }`}
+            >
+              <div className={`p-2 rounded-xl transition-all ${isActive ? 'bg-primary/10' : ''}`}>
+                <item.icon size={22} strokeWidth={isActive ? 2.5 : 2} />
+              </div>
+              <span className="text-[10px] font-bold tracking-tight uppercase">{item.label}</span>
+            </button>
+          );
+        })}
+      </nav>
     </div>
   );
 };
