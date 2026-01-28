@@ -6,17 +6,17 @@ export async function forgeNursingQuestions(
   subject: string, 
   count: number = 5, 
   difficulty: Difficulty = 'Intermediate',
-  topic?: string,
-  modelName: string = 'gemini-3-flash-preview'
+  topic?: string
 ): Promise<Question[]> {
-  // Always obtain the API key from process.env.API_KEY at the moment of call
+  // Obtain the API key directly from process.env.API_KEY at the moment of call.
+  // This must not be empty or the SDK will throw the "must be set" error.
   const apiKey = process.env.API_KEY;
   
   if (!apiKey) {
-    throw new Error("API Key is missing. Please select an API key to continue.");
+    throw new Error("API_KEY_MISSING");
   }
 
-  // Use mandatory initialization pattern
+  // Create a new instance right before making an API call per instructions.
   const ai = new GoogleGenAI({ apiKey });
   
   const prompt = `Act as an NCLEX-RN Item Writer and Senior Clinical Nurse Educator. 
@@ -37,7 +37,7 @@ export async function forgeNursingQuestions(
 
   try {
     const response = await ai.models.generateContent({
-      model: modelName,
+      model: 'gemini-3-pro-preview', // Using Pro for complex medical scenario generation
       contents: [{ parts: [{ text: prompt }] }],
       config: {
         responseMimeType: "application/json",
@@ -62,7 +62,7 @@ export async function forgeNursingQuestions(
 
     const text = response.text;
     if (!text) {
-      throw new Error("AI returned an empty response. Check your parameters.");
+      throw new Error("EMPTY_RESPONSE");
     }
 
     const parsed: any[] = JSON.parse(text.trim());

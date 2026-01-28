@@ -18,32 +18,13 @@ const AIGenerator: React.FC<AIGeneratorProps> = ({ onGenerated, setView }) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [previewList, setPreviewList] = useState<Question[] | null>(null);
   const [error, setError] = useState<{ message: string; needsKey: boolean } | null>(null);
-  const [hasKey, setHasKey] = useState<boolean>(true);
-
-  useEffect(() => {
-    checkKeyStatus();
-  }, []);
-
-  const checkKeyStatus = async () => {
-    if ((window as any).aistudio?.hasSelectedApiKey) {
-      try {
-        const selected = await (window as any).aistudio.hasSelectedApiKey();
-        setHasKey(selected);
-      } catch (e) {
-        setHasKey(false);
-      }
-    } else {
-      // In non-Aistudio environments, assume key is either in env or missing
-      setHasKey(!!process.env.API_KEY);
-    }
-  };
 
   const handleOpenKeySelector = async () => {
     if ((window as any).aistudio?.openSelectKey) {
       try {
         await (window as any).aistudio.openSelectKey();
-        setHasKey(true);
         setError(null);
+        // Per guidelines, assume success after triggering and let next attempt verify
       } catch (e) {
         console.error("Failed to open key selector:", e);
       }
@@ -51,15 +32,9 @@ const AIGenerator: React.FC<AIGeneratorProps> = ({ onGenerated, setView }) => {
   };
 
   const handleForge = async () => {
-    // Re-check key presence right before call
-    if (!process.env.API_KEY && (window as any).aistudio?.openSelectKey) {
-      setError({ message: "You must select an API key to use the Clinical Forge.", needsKey: true });
-      await handleOpenKeySelector();
-      return;
-    }
-
     setIsGenerating(true);
     setError(null);
+    
     try {
       const qs = await forgeNursingQuestions(subject, count, difficulty, topic);
       setPreviewList(qs);
@@ -67,19 +42,27 @@ const AIGenerator: React.FC<AIGeneratorProps> = ({ onGenerated, setView }) => {
       console.error("Forge error:", err);
       const errorMessage = err.message || String(err);
       
-      const isKeyError = errorMessage.toLowerCase().includes("api key") || 
-                        errorMessage.includes("401") || 
-                        errorMessage.includes("Requested entity was not found");
+      const isKeyMissing = errorMessage === "API_KEY_MISSING";
+      const isAuthError = errorMessage.toLowerCase().includes("api key") || errorMessage.includes("401");
+      const isEntityNotFound = errorMessage.includes("Requested entity was not found");
 
-      setError({
-        message: isKeyError 
-          ? "Authentication failed. Please ensure you have selected a valid, billing-enabled API key." 
-          : `Clinical Forge Error: ${errorMessage}`,
-        needsKey: isKeyError
-      });
-      
-      if (isKeyError && (window as any).aistudio?.openSelectKey) {
-        await handleOpenKeySelector();
+      if (isKeyMissing || isAuthError || isEntityNotFound) {
+        setError({
+          message: isEntityNotFound 
+            ? "Resource not found. Your API key might not have access to this model or project. Please select a valid billing-enabled key."
+            : "Authentication failed. A valid Gemini API key is required to forge scenarios.",
+          needsKey: true
+        });
+        
+        // Guidelines: If entity not found or key missing, prompt for key
+        if ((window as any).aistudio?.openSelectKey) {
+          await handleOpenKeySelector();
+        }
+      } else {
+        setError({
+          message: `Generation failed: ${errorMessage}`,
+          needsKey: false
+        });
       }
     } finally {
       setIsGenerating(false);
@@ -143,18 +126,18 @@ const AIGenerator: React.FC<AIGeneratorProps> = ({ onGenerated, setView }) => {
 
       <div className="bg-white dark:bg-zinc-900 p-5 lg:p-12 rounded-4xl border border-zinc-100 dark:border-zinc-800 shadow-sm space-y-8">
         {error && (
-          <div className="p-4 border border-rose-100 bg-rose-50 rounded-2xl text-sm text-rose-800 animate-pulse">
+          <div className="p-4 border border-rose-100 bg-rose-50 rounded-2xl text-sm text-rose-800">
             <div className="flex gap-3">
               <AlertCircle size={20} className="shrink-0" />
               <div className="flex-1">
-                <p className="font-bold mb-1">Configuration Required</p>
+                <p className="font-bold mb-1">Action Required</p>
                 <p className="text-xs mb-3 leading-relaxed">{error.message}</p>
                 {error.needsKey && (
                   <button 
                     onClick={handleOpenKeySelector} 
                     className="w-full sm:w-auto text-xs bg-white px-4 py-2 rounded-xl border border-rose-200 font-bold shadow-sm hover:bg-rose-100 transition-all flex items-center justify-center gap-2"
                   >
-                    <Key size={14} /> Select API Key
+                    <Key size={14} /> Select Paid API Key
                   </button>
                 )}
               </div>
@@ -223,7 +206,7 @@ const AIGenerator: React.FC<AIGeneratorProps> = ({ onGenerated, setView }) => {
         </button>
         
         <p className="text-[10px] text-zinc-400 text-center leading-relaxed">
-          Powered by Gemini 3 Flash. Ensure you have a valid API key from a paid GCP project.
+          Powered by Gemini 3 Pro. Access requires a billing-enabled API key from a paid GCP project.
           <br />
           <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Billing Documentation</a>
         </p>
