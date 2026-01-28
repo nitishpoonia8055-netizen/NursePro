@@ -4,6 +4,9 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
+  "scripts": {
+    "build": "echo 'Static site - no build needed'"
+  },
   "dependencies": {
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

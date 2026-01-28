@@ -1,6 +1,6 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
-import { Question } from '../types';
+import { Question } from '../types.ts';
 
 export function shuffleArray<T,>(array: T[]): T[] {
   const newArray = [...array];

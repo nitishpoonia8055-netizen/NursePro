@@ -1,7 +1,7 @@
 
 import React from 'react';
-import { AppView, UserStats, Question } from '../types';
-import { SUBJECTS } from '../constants';
+import { AppView, UserStats, Question } from '../types.ts';
+import { SUBJECTS } from '../constants.ts';
 import { TrendingUp, Award, Play, Database, Sparkles, Timer, Zap, ShieldCheck } from 'lucide-react';
 
 interface DashboardProps {

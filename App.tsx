@@ -12,14 +12,14 @@ import {
   Flame,
   Zap
 } from 'lucide-react';
-import { AppState, AppView, Question, UserStats } from './types';
-import { SUBJECTS, INITIAL_QUESTIONS } from './constants';
-import Dashboard from './components/Dashboard';
-import PracticeMode from './components/PracticeMode';
-import AIGenerator from './components/AIGenerator';
-import SubjectBank from './components/SubjectBank';
-import Settings from './components/Settings';
-import Analytics from './components/Analytics';
+import { AppState, AppView, Question, UserStats } from './types.ts';
+import { SUBJECTS, INITIAL_QUESTIONS } from './constants.ts';
+import Dashboard from './components/Dashboard.tsx';
+import PracticeMode from './components/PracticeMode.tsx';
+import AIGenerator from './components/AIGenerator.tsx';
+import SubjectBank from './components/SubjectBank.tsx';
+import Settings from './components/Settings.tsx';
+import Analytics from './components/Analytics.tsx';
 
 const App: React.FC = () => {
   const [state, setState] = useState<AppState>(() => {

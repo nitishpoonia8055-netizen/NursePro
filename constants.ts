@@ -1,5 +1,5 @@
 
-import { Question } from './types';
+import { Question } from './types.ts';
 
 export const SUBJECTS = [
   { id: 'fon', name: 'Fundamentals of Nursing', icon: 'BookOpen', color: 'bg-indigo-500' },
