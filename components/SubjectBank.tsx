@@ -1,12 +1,12 @@
 
 import React, { useState } from 'react';
-import { Question } from '../types';
-import { Search, ChevronLeft, Trash2, BookOpen, Clock, Activity, Play } from 'lucide-react';
+import { Question } from '../types.ts';
+import { Search, ChevronLeft, Trash2, BookOpen, Play } from 'lucide-react';
 
 interface SubjectBankProps {
   subjectName: string;
   questions: Question[];
-  onDelete: (id: string) => void;
+  onDelete: (id: string | number) => void;
   onStartPractice: () => void;
   onBack: () => void;
 }

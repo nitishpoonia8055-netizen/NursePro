@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { AppState } from '../types';
+import { AppState } from '../types.ts';
 import { Download, Upload, Trash2, ShieldCheck, Database } from 'lucide-react';
 
 interface SettingsProps {
@@ -54,8 +54,8 @@ const Settings: React.FC<SettingsProps> = ({ state, onImport, onReset }) => {
             <button onClick={exportData} className="flex items-center justify-center gap-3 p-5 rounded-2xl border-2 border-zinc-100 dark:border-zinc-800 font-bold hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all">
               <Download size={20} /> Export Bank
             </button>
-            <label className="flex items-center justify-center gap-3 p-5 rounded-2xl border-2 border-zinc-100 dark:border-zinc-800 font-bold hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all cursor-pointer">
-              <Upload size={20} /> Import Bank
+            <label className="flex items-center justify-center gap-3 p-5 rounded-2xl border-2 border-zinc-100 dark:border-zinc-800 font-bold hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all cursor-pointer text-center">
+              <span className="flex items-center gap-2"><Upload size={20} /> Import Bank</span>
               <input type="file" accept=".json" onChange={handleImport} className="hidden" />
             </label>
           </div>

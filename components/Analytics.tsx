@@ -1,7 +1,7 @@
 
 import React from 'react';
-import { UserStats, Question } from '../types';
-import { SUBJECTS } from '../constants';
+import { UserStats, Question } from '../types.ts';
+import { SUBJECTS } from '../constants.ts';
 
 interface AnalyticsProps {
   stats: UserStats;

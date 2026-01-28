@@ -12,14 +12,14 @@ import {
   Flame,
   Zap
 } from 'lucide-react';
-import { AppState, AppView, Question, UserStats } from './types.ts';
-import { SUBJECTS, INITIAL_QUESTIONS } from './constants.ts';
-import Dashboard from './components/Dashboard.tsx';
-import PracticeMode from './components/PracticeMode.tsx';
-import AIGenerator from './components/AIGenerator.tsx';
-import SubjectBank from './components/SubjectBank.tsx';
-import Settings from './components/Settings.tsx';
-import Analytics from './components/Analytics.tsx';
+import { AppState, AppView, Question, UserStats } from './types';
+import { SUBJECTS, INITIAL_QUESTIONS } from './constants';
+import Dashboard from './components/Dashboard';
+import PracticeMode from './components/PracticeMode';
+import AIGenerator from './components/AIGenerator';
+import SubjectBank from './components/SubjectBank';
+import Settings from './components/Settings';
+import Analytics from './components/Analytics';
 
 const App: React.FC = () => {
   const [state, setState] = useState<AppState>(() => {
@@ -189,7 +189,6 @@ const App: React.FC = () => {
 
   return (
     <div className={`min-h-screen flex transition-colors duration-300 ${state.darkMode ? 'bg-zinc-950 text-white' : 'bg-[#f8fafc] text-zinc-900'}`}>
-      {/* Mobile Top Bar */}
       <div className="lg:hidden fixed top-0 left-0 right-0 h-14 px-4 flex items-center justify-between bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-800 z-40">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white"><Flame size={18} /></div>
@@ -200,7 +199,6 @@ const App: React.FC = () => {
         </button>
       </div>
 
-      {/* Sidebar Overlay */}
       {isSidebarOpen && (
         <div 
           className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[50] lg:hidden"
@@ -208,7 +206,6 @@ const App: React.FC = () => {
         />
       )}
 
-      {/* Sidebar Content */}
       <aside className={`fixed inset-y-0 left-0 w-72 bg-white dark:bg-zinc-900 border-r border-zinc-100 dark:border-zinc-800 p-6 z-[60] transition-transform duration-300 lg:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="flex flex-col h-full">
           <div className="flex items-center justify-between mb-8">

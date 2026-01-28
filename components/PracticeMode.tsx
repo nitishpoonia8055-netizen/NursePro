@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Question } from '../types';
+import { Question } from '../types.ts';
 import { X, ChevronLeft, CheckCircle2, XCircle, Info, Share2, Timer } from 'lucide-react';
 
 interface PracticeModeProps {
@@ -16,7 +16,6 @@ const PracticeMode: React.FC<PracticeModeProps> = ({ questions, isMock = false, 
   const [isConfirmed, setIsConfirmed] = useState(false);
   const [showRationale, setShowRationale] = useState(false);
   const [timeLeft, setTimeLeft] = useState(isMock ? 30 * 60 : 0);
-  const [answers, setAnswers] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     let timer: number;
@@ -63,7 +62,6 @@ const PracticeMode: React.FC<PracticeModeProps> = ({ questions, isMock = false, 
     
     const isCorrect = selectedOption === currentQuestion.correctIndex;
     onAnswer(currentQuestion.id.toString(), isCorrect);
-    setAnswers(prev => ({ ...prev, [currentQuestion.id]: isCorrect }));
   };
 
   const nextQuestion = () => {
@@ -187,7 +185,6 @@ const PracticeMode: React.FC<PracticeModeProps> = ({ questions, isMock = false, 
         )}
       </div>
 
-      {/* Fixed Footer for Mobile */}
       <div className="fixed bottom-0 left-0 right-0 p-4 lg:p-6 pb-[env(safe-area-inset-bottom,16px)] bg-white/80 dark:bg-zinc-950/80 backdrop-blur-xl border-t border-zinc-100 dark:border-zinc-800 z-30">
         <div className="max-w-xl mx-auto flex items-center justify-between gap-3">
           <button 
@@ -203,7 +200,7 @@ const PracticeMode: React.FC<PracticeModeProps> = ({ questions, isMock = false, 
             disabled={selectedOption === null}
             className={`flex-1 h-14 rounded-2xl font-bold transition-all shadow-lg text-sm ${
               selectedOption === null 
-                ? 'bg-zinc-200 text-zinc-400 dark:bg-zinc-800 cursor-not-allowed' 
+                ? 'bg-zinc-200 text-zinc-400 dark:bg-zinc-800' 
                 : 'bg-primary text-white shadow-primary/20 active:scale-[0.98]'
             }`}
           >

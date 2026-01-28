@@ -2,7 +2,7 @@
 import React from 'react';
 import { AppView, UserStats, Question } from '../types';
 import { SUBJECTS } from '../constants';
-import { TrendingUp, Award, Clock, Play, Database, Sparkles, Timer, Zap, ShieldCheck } from 'lucide-react';
+import { TrendingUp, Award, Play, Database, Sparkles, Timer, Zap, ShieldCheck } from 'lucide-react';
 
 interface DashboardProps {
   stats: UserStats;
@@ -29,12 +29,11 @@ const Dashboard: React.FC<DashboardProps> = ({ stats, setView, questions }) => {
             onClick={() => setView('FORGE')} 
             className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-6 py-3.5 bg-primary text-white rounded-2xl font-bold shadow-lg shadow-primary/20 active:scale-95 transition-all text-sm"
            >
-             <Sparkles size={18} /> AI Forge
+             <span className="flex items-center gap-2"><Sparkles size={18} /> AI Forge</span>
            </button>
         </div>
       </header>
 
-      {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6">
         <StatCard icon={TrendingUp} label="Clinical Mastery" value={`${masteryPercentage}%`} color="text-primary" bg="bg-indigo-50 dark:bg-indigo-900/30" />
         <StatCard icon={Database} label="Scenario Bank" value={questions.length} color="text-indigo-500" bg="bg-indigo-50 dark:bg-indigo-900/30" />
@@ -43,7 +42,6 @@ const Dashboard: React.FC<DashboardProps> = ({ stats, setView, questions }) => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
-        {/* Subject Hubs */}
         <section className="lg:col-span-2 order-2 lg:order-1">
           <div className="flex items-center justify-between mb-4 lg:mb-6">
             <h2 className="text-xl lg:text-2xl font-bold">Curriculum Hub</h2>
@@ -76,7 +74,6 @@ const Dashboard: React.FC<DashboardProps> = ({ stats, setView, questions }) => {
           </div>
         </section>
 
-        {/* Tactical Modes */}
         <section className="space-y-4 lg:space-y-6 order-1 lg:order-2">
           <h2 className="text-xl lg:text-2xl font-bold">Tactical Modes</h2>
           <div className="grid grid-cols-1 gap-3">

@@ -1,6 +1,6 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
-import { Question, AdpiePhase } from '../types';
+import { Question } from '../types';
 
 export function shuffleArray<T,>(array: T[]): T[] {
   const newArray = [...array];
@@ -16,7 +16,7 @@ export async function forgeNursingQuestions(
   count: number = 5, 
   difficulty: string = 'Moderate',
   topic?: string,
-  modelName: string = 'gemini-3-pro-preview'
+  modelName: string = 'gemini-3-flash-preview'
 ): Promise<Question[]> {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
@@ -31,8 +31,7 @@ export async function forgeNursingQuestions(
   - "text": the clinical scenario question
   - "options": an array of 4 strings
   - "correctIndex": the 0-based index of the correct answer in the options array
-  - "explanation": a detailed clinical rationale explaining the physiological or protocol-based reason for the correct choice.
-  - NEVER use letters like (A, B, C, D) in the explanation.`;
+  - "explanation": a detailed clinical rationale explaining the physiological or protocol-based reason for the correct choice.`;
 
   try {
     const response = await ai.models.generateContent({
@@ -72,7 +71,7 @@ export async function forgeNursingQuestions(
       options: q.options,
       correctIndex: q.correctIndex,
       explanation: q.explanation,
-      subject: subject, // internal mapping
+      subject: subject,
       difficulty: difficulty as any,
       practicedCount: 0
     }));

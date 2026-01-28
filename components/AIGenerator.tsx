@@ -1,9 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { Sparkles, Loader2, Play, ChevronLeft, Check, Trash2, Key, AlertCircle } from 'lucide-react';
-import { forgeNursingQuestions } from '../services/geminiService';
-import { Question, AppView } from '../types';
-import { SUBJECTS } from '../constants';
+import { forgeNursingQuestions } from '../services/geminiService.ts';
+import { Question, AppView } from '../types.ts';
+import { SUBJECTS } from '../constants.ts';
 
 interface AIGeneratorProps {
   onGenerated: (qs: Question[]) => void;
