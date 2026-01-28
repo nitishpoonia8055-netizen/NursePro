@@ -9,8 +9,9 @@ export async function forgeNursingQuestions(
   topic?: string,
   modelName: string = 'gemini-3-flash-preview'
 ): Promise<Question[]> {
-  // Always create a new instance right before the call to ensure the latest API key is used
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+  // Use the API key string directly as required by the instructions.
+  // The value is expected to be injected into process.env.API_KEY at runtime.
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
   
   const prompt = `Act as an NCLEX-RN Item Writer and Senior Clinical Nurse Educator. 
   Subject Area: ${subject}. 
@@ -55,7 +56,7 @@ export async function forgeNursingQuestions(
 
     const text = response.text;
     if (!text) {
-      throw new Error("Empty response from AI model. Please try again.");
+      throw new Error("Empty response from AI model.");
     }
 
     const parsed: any[] = JSON.parse(text.trim());
@@ -68,8 +69,7 @@ export async function forgeNursingQuestions(
       practicedCount: 0
     }));
   } catch (error: any) {
-    console.error("Clinical Forge Error Details:", error);
-    // Standardizing the error message for the UI to handle
+    console.error("Gemini API Error:", error);
     throw error;
   }
 }

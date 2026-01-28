@@ -3,6 +3,12 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App.tsx';
 
+// Shim process.env for the browser environment to support runtime key injection
+if (typeof window !== 'undefined') {
+  (window as any).process = (window as any).process || {};
+  (window as any).process.env = (window as any).process.env || {};
+}
+
 const rootElement = document.getElementById('root');
 if (!rootElement) {
   throw new Error("Could not find root element to mount to");
