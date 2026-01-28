@@ -17,22 +17,26 @@ const AIGenerator: React.FC<AIGeneratorProps> = ({ onGenerated, setView }) => {
   const [difficulty, setDifficulty] = useState<Difficulty>('Intermediate');
   const [isGenerating, setIsGenerating] = useState(false);
   const [previewList, setPreviewList] = useState<Question[] | null>(null);
-  const [error, setError] = useState<{ message: string; needsKey: boolean; isQuota: boolean } | null>(null);
+  const [error, setError] = useState<{ message: string; needsKey: boolean } | null>(null);
   const [hasKey, setHasKey] = useState<boolean>(true);
 
   useEffect(() => {
-    const checkKey = async () => {
-      if ((window as any).aistudio?.hasSelectedApiKey) {
-        try {
-          const selected = await (window as any).aistudio.hasSelectedApiKey();
-          setHasKey(selected);
-        } catch (e) {
-          console.error("Error checking key selection:", e);
-        }
-      }
-    };
-    checkKey();
+    checkKeyStatus();
   }, []);
+
+  const checkKeyStatus = async () => {
+    if ((window as any).aistudio?.hasSelectedApiKey) {
+      try {
+        const selected = await (window as any).aistudio.hasSelectedApiKey();
+        setHasKey(selected);
+      } catch (e) {
+        setHasKey(false);
+      }
+    } else {
+      // In non-Aistudio environments, assume key is either in env or missing
+      setHasKey(!!process.env.API_KEY);
+    }
+  };
 
   const handleOpenKeySelector = async () => {
     if ((window as any).aistudio?.openSelectKey) {
@@ -41,40 +45,42 @@ const AIGenerator: React.FC<AIGeneratorProps> = ({ onGenerated, setView }) => {
         setHasKey(true);
         setError(null);
       } catch (e) {
-        console.error("Error opening key selector:", e);
+        console.error("Failed to open key selector:", e);
       }
     }
   };
 
   const handleForge = async () => {
+    // Re-check key presence right before call
+    if (!process.env.API_KEY && (window as any).aistudio?.openSelectKey) {
+      setError({ message: "You must select an API key to use the Clinical Forge.", needsKey: true });
+      await handleOpenKeySelector();
+      return;
+    }
+
     setIsGenerating(true);
     setError(null);
     try {
-      const qs = await forgeNursingQuestions(subject, count, difficulty, topic, 'gemini-3-flash-preview');
+      const qs = await forgeNursingQuestions(subject, count, difficulty, topic);
       setPreviewList(qs);
     } catch (err: any) {
       console.error("Forge error:", err);
       const errorMessage = err.message || String(err);
-      const isQuota = errorMessage.includes("429") || errorMessage.toLowerCase().includes("quota");
-      const isKeyError = errorMessage.includes("API_KEY") || errorMessage.includes("401");
-      const isNotFound = errorMessage.includes("Requested entity was not found");
       
-      // Mandatory fallback for key issues per instructions
-      if (isNotFound && (window as any).aistudio?.openSelectKey) {
-        await handleOpenKeySelector();
-      }
+      const isKeyError = errorMessage.toLowerCase().includes("api key") || 
+                        errorMessage.includes("401") || 
+                        errorMessage.includes("Requested entity was not found");
 
       setError({
-        message: isQuota 
-          ? "Model quota reached. Please wait a minute or use a billing-enabled key." 
-          : isNotFound
-          ? "Resource not found. This often indicates an invalid or expired API key. Please re-select your key."
-          : isKeyError
-          ? "Authentication failed. Please select a valid Google Gemini API key."
-          : `Generation failed: ${errorMessage.substring(0, 100)}...`,
-        needsKey: isKeyError || isQuota || isNotFound,
-        isQuota: isQuota
+        message: isKeyError 
+          ? "Authentication failed. Please ensure you have selected a valid, billing-enabled API key." 
+          : `Clinical Forge Error: ${errorMessage}`,
+        needsKey: isKeyError
       });
+      
+      if (isKeyError && (window as any).aistudio?.openSelectKey) {
+        await handleOpenKeySelector();
+      }
     } finally {
       setIsGenerating(false);
     }
@@ -107,13 +113,13 @@ const AIGenerator: React.FC<AIGeneratorProps> = ({ onGenerated, setView }) => {
           {previewList.map((q, idx) => (
             <div key={idx} className="bg-white dark:bg-zinc-900 p-5 rounded-3xl border border-zinc-100 dark:border-zinc-800 animate-fade-in" style={{ animationDelay: `${idx * 0.1}s` }}>
               <div className="flex items-center justify-between mb-4">
-                <span className="text-[10px] font-bold text-primary bg-indigo-50 dark:bg-indigo-900/40 px-2 py-0.5 rounded-full uppercase tracking-widest">{q.chapter}</span>
+                <span className="text-[10px] font-bold text-primary bg-indigo-50 dark:bg-indigo-900/40 px-2 py-0.5 rounded-full uppercase tracking-widest">{q.adpiePhase}</span>
                 <button onClick={() => setPreviewList(prev => prev!.filter((_, i) => i !== idx))} className="text-zinc-300 hover:text-rose-500"><Trash2 size={16} /></button>
               </div>
               <h3 className="text-sm font-semibold leading-relaxed mb-6">{q.text}</h3>
               <div className="grid grid-cols-1 gap-2">
                 {q.options.map((opt, oIdx) => (
-                  <div key={oIdx} className={`p-3 rounded-xl border text-[13px] ${oIdx === q.correctIndex ? 'border-emerald-500 bg-emerald-50/20 text-emerald-700' : 'border-zinc-50 dark:border-zinc-800 opacity-60'}`}>
+                  <div key={oIdx} className={`p-3 rounded-xl border text-[13px] ${oIdx === q.correctIndex ? 'border-emerald-500 bg-emerald-50/20 text-emerald-700 font-bold' : 'border-zinc-50 dark:border-zinc-800 opacity-60'}`}>
                     {opt}
                   </div>
                 ))}
@@ -137,18 +143,18 @@ const AIGenerator: React.FC<AIGeneratorProps> = ({ onGenerated, setView }) => {
 
       <div className="bg-white dark:bg-zinc-900 p-5 lg:p-12 rounded-4xl border border-zinc-100 dark:border-zinc-800 shadow-sm space-y-8">
         {error && (
-          <div className={`p-4 border rounded-2xl text-sm ${error.isQuota ? 'bg-amber-50 border-amber-100 text-amber-800' : 'bg-rose-50 border-rose-100 text-rose-800'}`}>
+          <div className="p-4 border border-rose-100 bg-rose-50 rounded-2xl text-sm text-rose-800 animate-pulse">
             <div className="flex gap-3">
               <AlertCircle size={20} className="shrink-0" />
               <div className="flex-1">
-                <p className="font-bold mb-1">{error.isQuota ? 'Quota Limit' : 'Clinical Forge Error'}</p>
+                <p className="font-bold mb-1">Configuration Required</p>
                 <p className="text-xs mb-3 leading-relaxed">{error.message}</p>
                 {error.needsKey && (
                   <button 
                     onClick={handleOpenKeySelector} 
-                    className="w-full sm:w-auto text-xs bg-white dark:bg-zinc-800 px-4 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 font-bold shadow-sm hover:bg-zinc-50 active:scale-95 transition-all"
+                    className="w-full sm:w-auto text-xs bg-white px-4 py-2 rounded-xl border border-rose-200 font-bold shadow-sm hover:bg-rose-100 transition-all flex items-center justify-center gap-2"
                   >
-                    Select/Update API Key
+                    <Key size={14} /> Select API Key
                   </button>
                 )}
               </div>
@@ -217,7 +223,7 @@ const AIGenerator: React.FC<AIGeneratorProps> = ({ onGenerated, setView }) => {
         </button>
         
         <p className="text-[10px] text-zinc-400 text-center leading-relaxed">
-          Powered by Gemini 3 Flash. Ensure you have a valid API key with billing enabled for large quantity generation.
+          Powered by Gemini 3 Flash. Ensure you have a valid API key from a paid GCP project.
           <br />
           <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Billing Documentation</a>
         </p>

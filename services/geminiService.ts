@@ -9,22 +9,28 @@ export async function forgeNursingQuestions(
   topic?: string,
   modelName: string = 'gemini-3-flash-preview'
 ): Promise<Question[]> {
-  // Use the API key string directly as required by the instructions.
-  // The value is expected to be injected into process.env.API_KEY at runtime.
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+  // Always obtain the API key from process.env.API_KEY at the moment of call
+  const apiKey = process.env.API_KEY;
+  
+  if (!apiKey) {
+    throw new Error("API Key is missing. Please select an API key to continue.");
+  }
+
+  // Use mandatory initialization pattern
+  const ai = new GoogleGenAI({ apiKey });
   
   const prompt = `Act as an NCLEX-RN Item Writer and Senior Clinical Nurse Educator. 
   Subject Area: ${subject}. 
   Difficulty: ${difficulty}. 
   Clinical Topic: ${topic || 'General clinical scenarios'}.
   
-  Generate ${count} high-fidelity, scenario-based multiple choice questions. 
+  Generate ${count} high-fidelity, scenario-based multiple choice questions for nursing practice. 
   
   STRICT CRITERIA:
-  1. Scenario: Start with patient age, gender, and presenting problem or history.
+  1. Scenario: Detailed clinical scenario with age, gender, and presenting problem.
   2. ADPIE: Categorize each question into a Nursing Process phase (Assessment, Diagnosis, Planning, Implementation, Evaluation).
-  3. Rationale: Provide a 2-3 sentence clinical evidence-based explanation.
-  4. Options: 4 total, 1 correct, 3 plausible distractors.
+  3. Rationale: Provide a 2-3 sentence clinical evidence-based explanation for the correct answer.
+  4. Options: 4 options total, 1 correct, 3 plausible distractors.
   
   Output JSON format: Array of objects with properties: 
   id (unique), chapter, text, options (array of 4), correctIndex (0-3), explanation, adpiePhase (Must be: Assessment, Diagnosis, Planning, Implementation, or Evaluation).`;
@@ -56,7 +62,7 @@ export async function forgeNursingQuestions(
 
     const text = response.text;
     if (!text) {
-      throw new Error("Empty response from AI model.");
+      throw new Error("AI returned an empty response. Check your parameters.");
     }
 
     const parsed: any[] = JSON.parse(text.trim());
@@ -69,7 +75,7 @@ export async function forgeNursingQuestions(
       practicedCount: 0
     }));
   } catch (error: any) {
-    console.error("Gemini API Error:", error);
+    console.error("Clinical Forge API Error:", error);
     throw error;
   }
 }
