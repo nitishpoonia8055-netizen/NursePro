@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Sparkles, Loader2, Play, ChevronLeft, Check, Trash2, Key, AlertCircle } from 'lucide-react';
+import { Sparkles, Loader2, Play, ChevronLeft, Trash2, Key, AlertCircle, ShieldAlert, ExternalLink } from 'lucide-react';
 import { forgeNursingQuestions } from '../services/geminiService.ts';
 import { Question, AppView, Difficulty } from '../types.ts';
 import { SUBJECTS } from '../constants.ts';
@@ -18,13 +18,26 @@ const AIGenerator: React.FC<AIGeneratorProps> = ({ onGenerated, setView }) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [previewList, setPreviewList] = useState<Question[] | null>(null);
   const [error, setError] = useState<{ message: string; needsKey: boolean } | null>(null);
+  const [hasKey, setHasKey] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const checkKey = async () => {
+      if ((window as any).aistudio?.hasSelectedApiKey) {
+        const selected = await (window as any).aistudio.hasSelectedApiKey();
+        setHasKey(selected);
+      } else {
+        setHasKey(!!process.env.API_KEY);
+      }
+    };
+    checkKey();
+  }, []);
 
   const handleOpenKeySelector = async () => {
     if ((window as any).aistudio?.openSelectKey) {
       try {
         await (window as any).aistudio.openSelectKey();
+        setHasKey(true);
         setError(null);
-        // Per guidelines, assume success after triggering and let next attempt verify
       } catch (e) {
         console.error("Failed to open key selector:", e);
       }
@@ -42,25 +55,26 @@ const AIGenerator: React.FC<AIGeneratorProps> = ({ onGenerated, setView }) => {
       console.error("Forge error:", err);
       const errorMessage = err.message || String(err);
       
-      const isKeyMissing = errorMessage === "API_KEY_MISSING";
-      const isAuthError = errorMessage.toLowerCase().includes("api key") || errorMessage.includes("401");
+      const isAuthError = errorMessage === "API_KEY_MISSING" || 
+                          errorMessage.toLowerCase().includes("api key") || 
+                          errorMessage.includes("401");
+      
       const isEntityNotFound = errorMessage.includes("Requested entity was not found");
 
-      if (isKeyMissing || isAuthError || isEntityNotFound) {
+      if (isAuthError || isEntityNotFound) {
+        setHasKey(false);
         setError({
           message: isEntityNotFound 
-            ? "Resource not found. Your API key might not have access to this model or project. Please select a valid billing-enabled key."
-            : "Authentication failed. A valid Gemini API key is required to forge scenarios.",
+            ? "Model access denied. This often happens if the selected project doesn't have the Gemini API enabled or billing is inactive. Please select a valid paid project key."
+            : "Authentication required. You must select a Gemini API key to use the Clinical Forge.",
           needsKey: true
         });
-        
-        // Guidelines: If entity not found or key missing, prompt for key
         if ((window as any).aistudio?.openSelectKey) {
           await handleOpenKeySelector();
         }
       } else {
         setError({
-          message: `Generation failed: ${errorMessage}`,
+          message: `Generation interrupted: ${errorMessage}`,
           needsKey: false
         });
       }
@@ -76,6 +90,40 @@ const AIGenerator: React.FC<AIGeneratorProps> = ({ onGenerated, setView }) => {
     }
   };
 
+  if (hasKey === false) {
+    return (
+      <div className="max-w-xl mx-auto py-20 text-center space-y-8 animate-slide-up">
+        <div className="w-20 h-20 bg-amber-50 dark:bg-amber-900/20 text-amber-500 rounded-3xl flex items-center justify-center mx-auto shadow-xl shadow-amber-500/10">
+          <Key size={40} />
+        </div>
+        <div>
+          <h2 className="text-2xl lg:text-3xl font-bold mb-3">Forge Access Locked</h2>
+          <p className="text-zinc-500 text-sm leading-relaxed max-w-sm mx-auto">
+            Clinical generation requires a Gemini API key from a billing-enabled Google Cloud project.
+          </p>
+        </div>
+        
+        <div className="space-y-4">
+          <button 
+            onClick={handleOpenKeySelector}
+            className="w-full h-14 bg-primary text-white rounded-2xl font-bold flex items-center justify-center gap-3 shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
+          >
+            <ShieldAlert size={20} /> Select Paid API Key
+          </button>
+          
+          <a 
+            href="https://ai.google.dev/gemini-api/docs/billing" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 text-[11px] font-bold text-zinc-400 hover:text-primary transition-colors uppercase tracking-widest"
+          >
+            Billing Documentation <ExternalLink size={12} />
+          </a>
+        </div>
+      </div>
+    );
+  }
+
   if (previewList) {
     return (
       <div className="max-w-4xl mx-auto py-4 lg:py-10 pb-24">
@@ -84,17 +132,17 @@ const AIGenerator: React.FC<AIGeneratorProps> = ({ onGenerated, setView }) => {
             <ChevronLeft size={18} /> Back
           </button>
           <div className="text-center">
-            <h2 className="text-lg lg:text-2xl font-bold">Forged Result</h2>
-            <p className="text-zinc-500 text-[11px] font-bold uppercase">{previewList.length} items ready</p>
+            <h2 className="text-lg lg:text-2xl font-bold">Forged Items</h2>
+            <p className="text-zinc-500 text-[11px] font-bold uppercase">{previewList.length} ready for bank</p>
           </div>
-          <button onClick={handleSaveAll} className="bg-primary text-white px-5 py-2.5 rounded-2xl font-bold text-sm shadow-lg shadow-primary/20">
-            Save
+          <button onClick={handleSaveAll} className="bg-primary text-white px-6 py-2.5 rounded-2xl font-bold text-sm shadow-lg shadow-primary/20">
+            Commit to Memory
           </button>
         </div>
 
-        <div className="space-y-4">
+        <div className="grid grid-cols-1 gap-4">
           {previewList.map((q, idx) => (
-            <div key={idx} className="bg-white dark:bg-zinc-900 p-5 rounded-3xl border border-zinc-100 dark:border-zinc-800 animate-fade-in" style={{ animationDelay: `${idx * 0.1}s` }}>
+            <div key={idx} className="bg-white dark:bg-zinc-900 p-6 rounded-3xl border border-zinc-100 dark:border-zinc-800 animate-fade-in" style={{ animationDelay: `${idx * 0.1}s` }}>
               <div className="flex items-center justify-between mb-4">
                 <span className="text-[10px] font-bold text-primary bg-indigo-50 dark:bg-indigo-900/40 px-2 py-0.5 rounded-full uppercase tracking-widest">{q.adpiePhase}</span>
                 <button onClick={() => setPreviewList(prev => prev!.filter((_, i) => i !== idx))} className="text-zinc-300 hover:text-rose-500"><Trash2 size={16} /></button>
@@ -115,29 +163,28 @@ const AIGenerator: React.FC<AIGeneratorProps> = ({ onGenerated, setView }) => {
   }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6 lg:space-y-10 pb-10">
+    <div className="max-w-3xl mx-auto space-y-6 lg:space-y-10 pb-10 animate-slide-up">
       <div className="text-center">
         <div className="inline-flex items-center justify-center w-16 h-16 bg-primary/10 text-primary rounded-3xl mb-4 shadow-xl shadow-primary/5">
           <Sparkles size={32} />
         </div>
-        <h1 className="text-2xl lg:text-4xl font-bold mb-2">AI Forge</h1>
-        <p className="text-sm text-zinc-500 max-w-xs mx-auto">Generate high-fidelity clinical items for targeted drilling.</p>
+        <h1 className="text-2xl lg:text-4xl font-bold mb-2">Clinical Forge</h1>
+        <p className="text-sm text-zinc-500 max-w-xs mx-auto font-medium">Create high-fidelity NCLEX-style scenarios on demand.</p>
       </div>
 
-      <div className="bg-white dark:bg-zinc-900 p-5 lg:p-12 rounded-4xl border border-zinc-100 dark:border-zinc-800 shadow-sm space-y-8">
+      <div className="bg-white dark:bg-zinc-900 p-6 lg:p-12 rounded-[40px] border border-zinc-100 dark:border-zinc-800 shadow-sm space-y-8">
         {error && (
-          <div className="p-4 border border-rose-100 bg-rose-50 rounded-2xl text-sm text-rose-800">
+          <div className="p-4 border border-rose-100 bg-rose-50/50 dark:bg-rose-900/10 rounded-2xl text-rose-800 dark:text-rose-400">
             <div className="flex gap-3">
               <AlertCircle size={20} className="shrink-0" />
               <div className="flex-1">
-                <p className="font-bold mb-1">Action Required</p>
-                <p className="text-xs mb-3 leading-relaxed">{error.message}</p>
+                <p className="text-xs font-bold mb-3 leading-relaxed">{error.message}</p>
                 {error.needsKey && (
                   <button 
                     onClick={handleOpenKeySelector} 
-                    className="w-full sm:w-auto text-xs bg-white px-4 py-2 rounded-xl border border-rose-200 font-bold shadow-sm hover:bg-rose-100 transition-all flex items-center justify-center gap-2"
+                    className="text-xs bg-white dark:bg-zinc-800 px-4 py-2 rounded-xl border border-rose-200 dark:border-rose-900 font-bold shadow-sm hover:bg-rose-50 transition-all flex items-center gap-2"
                   >
-                    <Key size={14} /> Select Paid API Key
+                    <Key size={14} /> Update API Key
                   </button>
                 )}
               </div>
@@ -146,7 +193,7 @@ const AIGenerator: React.FC<AIGeneratorProps> = ({ onGenerated, setView }) => {
         )}
 
         <div>
-          <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-4 text-center lg:text-left">Focus Unit</label>
+          <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-4">Focus Unit</label>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
             {SUBJECTS.map((s) => (
               <button 
@@ -163,10 +210,10 @@ const AIGenerator: React.FC<AIGeneratorProps> = ({ onGenerated, setView }) => {
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-3">Quantity</label>
+            <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-3">Item Count</label>
             <div className="flex bg-zinc-50 dark:bg-zinc-800 p-1 rounded-2xl">
               {[5, 10, 20].map(v => (
-                <button key={v} onClick={() => setCount(v)} className={`flex-1 py-2 rounded-xl text-xs font-bold ${count === v ? 'bg-white dark:bg-zinc-700 shadow-sm text-primary' : 'text-zinc-400'}`}>{v}</button>
+                <button key={v} onClick={() => setCount(v)} className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${count === v ? 'bg-white dark:bg-zinc-700 shadow-sm text-primary' : 'text-zinc-400'}`}>{v}</button>
               ))}
             </div>
           </div>
@@ -177,7 +224,7 @@ const AIGenerator: React.FC<AIGeneratorProps> = ({ onGenerated, setView }) => {
                 <button 
                   key={v} 
                   onClick={() => setDifficulty(v as Difficulty)} 
-                  className={`flex-1 py-2 rounded-xl text-[10px] font-bold ${difficulty === v ? 'bg-white dark:bg-zinc-700 shadow-sm text-primary' : 'text-zinc-400'}`}
+                  className={`flex-1 py-2 rounded-xl text-[10px] font-bold transition-all ${difficulty === v ? 'bg-white dark:bg-zinc-700 shadow-sm text-primary' : 'text-zinc-400'}`}
                 >
                   {v === 'Intermediate' ? 'Mod' : v}
                 </button>
@@ -187,13 +234,13 @@ const AIGenerator: React.FC<AIGeneratorProps> = ({ onGenerated, setView }) => {
         </div>
 
         <div>
-          <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-3">Specific Topic</label>
+          <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-3">Specific Clinical Area</label>
           <input 
             type="text" 
             value={topic} 
             onChange={(e) => setTopic(e.target.value)} 
-            placeholder="e.g., Triage priority, IV infusion..." 
-            className="w-full bg-zinc-50 dark:bg-zinc-800 border-none rounded-2xl p-4 text-sm font-medium outline-none focus:ring-2 focus:ring-primary" 
+            placeholder="e.g., Blood Transfusion, Triage Priorities..." 
+            className="w-full bg-zinc-50 dark:bg-zinc-800 border-none rounded-2xl p-4 text-sm font-medium outline-none focus:ring-2 focus:ring-primary transition-all" 
           />
         </div>
 
@@ -202,14 +249,17 @@ const AIGenerator: React.FC<AIGeneratorProps> = ({ onGenerated, setView }) => {
           disabled={isGenerating} 
           className="w-full h-14 bg-primary text-white rounded-2xl font-bold text-base flex items-center justify-center gap-3 shadow-xl shadow-primary/20 active:scale-[0.98] disabled:opacity-50 transition-all"
         >
-          {isGenerating ? <><Loader2 className="animate-spin" size={20} /> Clinical Forging...</> : <><Sparkles size={20} /> Forge Scenarios</>}
+          {isGenerating ? <><Loader2 className="animate-spin" size={20} /> Clinical Processing...</> : <><Sparkles size={20} /> Forge Items</>}
         </button>
         
-        <p className="text-[10px] text-zinc-400 text-center leading-relaxed">
-          Powered by Gemini 3 Pro. Access requires a billing-enabled API key from a paid GCP project.
-          <br />
-          <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Billing Documentation</a>
-        </p>
+        <div className="flex flex-col items-center gap-2">
+          <p className="text-[10px] text-zinc-400 text-center font-bold uppercase tracking-widest">
+            Powered by Gemini 3 Pro Intelligence
+          </p>
+          <button onClick={handleOpenKeySelector} className="text-[10px] text-primary hover:underline font-bold">
+            Change API Key
+          </button>
+        </div>
       </div>
     </div>
   );

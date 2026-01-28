@@ -8,38 +8,36 @@ export async function forgeNursingQuestions(
   difficulty: Difficulty = 'Intermediate',
   topic?: string
 ): Promise<Question[]> {
-  // Obtain the API key directly from process.env.API_KEY at the moment of call.
-  // This must not be empty or the SDK will throw the "must be set" error.
+  // Always use a fresh instance to ensure the most up-to-date API key is used
   const apiKey = process.env.API_KEY;
   
   if (!apiKey) {
     throw new Error("API_KEY_MISSING");
   }
 
-  // Create a new instance right before making an API call per instructions.
   const ai = new GoogleGenAI({ apiKey });
   
-  const prompt = `Act as an NCLEX-RN Item Writer and Senior Clinical Nurse Educator. 
-  Subject Area: ${subject}. 
-  Difficulty: ${difficulty}. 
-  Clinical Topic: ${topic || 'General clinical scenarios'}.
-  
-  Generate ${count} high-fidelity, scenario-based multiple choice questions for nursing practice. 
-  
-  STRICT CRITERIA:
-  1. Scenario: Detailed clinical scenario with age, gender, and presenting problem.
-  2. ADPIE: Categorize each question into a Nursing Process phase (Assessment, Diagnosis, Planning, Implementation, Evaluation).
-  3. Rationale: Provide a 2-3 sentence clinical evidence-based explanation for the correct answer.
-  4. Options: 4 options total, 1 correct, 3 plausible distractors.
-  
-  Output JSON format: Array of objects with properties: 
-  id (unique), chapter, text, options (array of 4), correctIndex (0-3), explanation, adpiePhase (Must be: Assessment, Diagnosis, Planning, Implementation, or Evaluation).`;
+  const systemInstruction = `You are a world-class NCLEX-RN Item Writer and Senior Clinical Nurse Educator. 
+Your goal is to generate high-fidelity, scenario-based multiple choice questions that adhere to the ADPIE nursing process framework.
+Current Subject: ${subject}.
+Target Difficulty: ${difficulty}.
+Specific Topic focus: ${topic || 'General clinical practice'}.
+
+STRICT OUTPUT RULES:
+1. Scenario: Start with patient demographic and clinical presentation.
+2. ADPIE: Categorize each question into exactly one phase: Assessment, Diagnosis, Planning, Implementation, or Evaluation.
+3. Rationale: Provide a 2-3 sentence evidence-based explanation for the correct answer.
+4. Options: exactly 4 options, 1 correct, 3 plausible clinical distractors.
+5. JSON Format: Output a raw JSON array of objects.`;
+
+  const prompt = `Generate ${count} scenario-based multiple choice questions for nursing practice.`;
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview', // Using Pro for complex medical scenario generation
+      model: 'gemini-3-pro-preview',
       contents: [{ parts: [{ text: prompt }] }],
       config: {
+        systemInstruction,
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.ARRAY,
@@ -61,9 +59,7 @@ export async function forgeNursingQuestions(
     });
 
     const text = response.text;
-    if (!text) {
-      throw new Error("EMPTY_RESPONSE");
-    }
+    if (!text) throw new Error("EMPTY_AI_RESPONSE");
 
     const parsed: any[] = JSON.parse(text.trim());
 
@@ -75,7 +71,7 @@ export async function forgeNursingQuestions(
       practicedCount: 0
     }));
   } catch (error: any) {
-    console.error("Clinical Forge API Error:", error);
+    console.error("Gemini Forge Failure:", error);
     throw error;
   }
 }
