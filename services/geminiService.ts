@@ -4,7 +4,7 @@ import { Question, AdpiePhase, Difficulty } from '../types.ts';
 
 /**
  * Forges nursing clinical scenarios using Gemini 3 Flash.
- * Adheres to strict technical guidelines for @google/genai integration.
+ * Relies on the pre-configured process.env.API_KEY.
  */
 export async function forgeNursingQuestions(
   subject: string, 
@@ -12,35 +12,29 @@ export async function forgeNursingQuestions(
   difficulty: Difficulty = 'Intermediate',
   topic?: string
 ): Promise<Question[]> {
-  // Always obtain the API key from the environment at the moment of call
   const apiKey = process.env.API_KEY;
   
   if (!apiKey) {
-    throw new Error("API_KEY_MISSING");
+    throw new Error("Clinical Forge environment key not detected.");
   }
 
-  // Create a new instance right before the call to ensure the latest key is used
-  const ai = new GoogleGenAI({ apiKey: apiKey });
+  const ai = new GoogleGenAI({ apiKey });
   
-  const systemInstruction = `You are a world-class NCLEX-RN Item Writer and Senior Clinical Nurse Educator. 
-Your goal is to generate high-fidelity, scenario-based multiple choice questions for nursing students.
+  const systemInstruction = `You are a world-class NCLEX-RN Item Writer. 
+Generate high-fidelity, scenario-based multiple choice questions.
 
-CONTEXT:
-Subject Area: ${subject}
-Difficulty Level: ${difficulty}
-Specific Focus: ${topic || 'General clinical scenarios'}
+Subject: ${subject}
+Difficulty: ${difficulty}
+Focus: ${topic || 'General clinical scenarios'}
 
-RULES:
-1. Scenario: Detailed clinical presentation with relevant vital signs or assessment findings.
-2. Framework: Categorize each item into a single Nursing Process phase (Assessment, Diagnosis, Planning, Implementation, Evaluation).
-3. Quality: 1 correct answer, 3 plausible clinical distractors.
-4. Rationale: Provide an evidence-based explanation for the correct answer.
-5. Format: Strict JSON array output.`;
+Format: JSON array. 
+Each object: {id, chapter, text, options[], correctIndex, explanation, adpiePhase}.
+Phases: Assessment, Diagnosis, Planning, Implementation, Evaluation.`;
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview', // Switched to Flash for high-speed, high-quality generation
-      contents: [{ parts: [{ text: `Forge ${count} high-fidelity nursing scenarios in JSON format based on the clinical area of ${subject}.` }] }],
+      model: 'gemini-3-flash-preview',
+      contents: [{ parts: [{ text: `Generate ${count} nursing scenarios in JSON format for ${subject}.` }] }],
       config: {
         systemInstruction,
         responseMimeType: "application/json",
@@ -64,7 +58,7 @@ RULES:
     });
 
     const jsonText = response.text;
-    if (!jsonText) throw new Error("AI_RESPONSE_EMPTY");
+    if (!jsonText) throw new Error("Synthesis produced an empty response.");
 
     const parsed: any[] = JSON.parse(jsonText.trim());
 
@@ -76,7 +70,7 @@ RULES:
       practicedCount: 0
     }));
   } catch (error: any) {
-    console.error("Clinical Forge API Error:", error);
+    console.error("Forge Service Error:", error);
     throw error;
   }
 }
