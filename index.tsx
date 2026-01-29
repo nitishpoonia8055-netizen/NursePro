@@ -1,13 +1,13 @@
-
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App.tsx';
 
-// Non-destructive shim for process.env in browser environments
-if (typeof window !== 'undefined') {
-  const win = window as any;
-  win.process = win.process || {};
-  win.process.env = win.process.env || {};
+if (typeof (window as any).process === 'undefined') {
+  (window as any).process = {
+    env: {
+      API_KEY: '' // Placeholder that gets filled by the host platform
+    }
+  };
 }
 
 const rootElement = document.getElementById('root');

@@ -1,10 +1,9 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import { Question, AdpiePhase, Difficulty } from '../types.ts';
 
 /**
  * Forges nursing clinical scenarios using Gemini 3 Flash.
- * Securely accesses process.env.API_KEY provided by the environment.
+ * Pulled from the injected environment variables.
  */
 export async function forgeNursingQuestions(
   subject: string, 
@@ -12,17 +11,14 @@ export async function forgeNursingQuestions(
   difficulty: Difficulty = 'Intermediate',
   topic?: string
 ): Promise<Question[]> {
-  
-  // Directly access the environment variable. 
-  // If the error persists, check the environment configuration dashboard.
-  const apiKey = process.env.API_KEY;
+  const apiKey = process.env.API_KEY; 
   
   if (!apiKey) {
-    throw new Error("Clinical Forge: API Key is missing from the environment variables. Please check your project settings.");
+    throw new Error("Clinical Forge: API Key is missing from the environment variables. Please ensure it is correctly configured.");
   }
 
-  // Initialize the AI client using the named parameter as required by the latest SDK guidelines.
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  // The SDK uses this key to authorize the 'gemini-3-flash-preview' model
+  const ai = new GoogleGenAI({ apiKey }); 
   
   const systemInstruction = `You are a world-class NCLEX-RN Item Writer. 
 Generate high-fidelity, scenario-based multiple choice questions for nursing professionals.
