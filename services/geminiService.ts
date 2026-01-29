@@ -11,6 +11,7 @@ export async function forgeNursingQuestions(
   difficulty: Difficulty = 'Intermediate',
   topic?: string
 ): Promise<Question[]> {
+  // Pulled from the injected environment
   const apiKey = process.env.API_KEY; 
   
   if (!apiKey) {
@@ -29,7 +30,8 @@ Focus: ${topic || 'General clinical scenarios'}
 
 Format Requirements:
 - Output must be a JSON array.
-- Each question must follow the schema: {id, chapter, text, options[], correctIndex, explanation, adpiePhase}.
+- Use the following schema: {id, chapter, text, options[], correctIndex, explanation, adpiePhase}.
+- Each object must strictly follow this structure.
 - adpiePhase must be one of: Assessment, Diagnosis, Planning, Implementation, Evaluation.`;
 
   try {
@@ -44,13 +46,35 @@ Format Requirements:
           items: {
             type: Type.OBJECT,
             properties: {
-              id: { type: Type.STRING },
-              chapter: { type: Type.STRING },
-              text: { type: Type.STRING },
-              options: { type: Type.ARRAY, items: { type: Type.STRING } },
-              correctIndex: { type: Type.INTEGER },
-              explanation: { type: Type.STRING },
-              adpiePhase: { type: Type.STRING }
+              id: { 
+                type: Type.INTEGER, 
+                description: "Unique numeric ID" 
+              },
+              chapter: { 
+                type: Type.STRING, 
+                description: "The clinical unit name" 
+              },
+              text: { 
+                type: Type.STRING, 
+                description: "The scenario and question" 
+              },
+              options: { 
+                type: Type.ARRAY, 
+                items: { type: Type.STRING }, 
+                description: "Array of exactly 4 options" 
+              },
+              correctIndex: { 
+                type: Type.INTEGER, 
+                description: "Index of correct answer" 
+              },
+              explanation: { 
+                type: Type.STRING, 
+                description: "Clinical rationale" 
+              },
+              adpiePhase: { 
+                type: Type.STRING, 
+                description: "The phase of the nursing process (Assessment, Diagnosis, Planning, Implementation, Evaluation)" 
+              }
             },
             required: ["id", "chapter", "text", "options", "correctIndex", "explanation", "adpiePhase"]
           }
@@ -63,12 +87,13 @@ Format Requirements:
 
     const parsed: any[] = JSON.parse(jsonText.trim());
 
-    return parsed.map((q, index) => ({
+    return parsed.map((q) => ({
       ...q,
-      id: `forge-${Date.now()}-${index}`,
+      id: `forge-${Date.now()}-${q.id}`,
       subject: subject,
       difficulty: difficulty,
-      practicedCount: 0
+      practicedCount: 0,
+      adpiePhase: (q.adpiePhase as AdpiePhase) || AdpiePhase.IMPLEMENTATION
     }));
   } catch (error: any) {
     console.error("Clinical Forge Service Error:", error);
