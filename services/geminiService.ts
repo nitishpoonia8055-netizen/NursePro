@@ -2,41 +2,43 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { Question, AdpiePhase, Difficulty } from '../types.ts';
 
+/**
+ * Forges nursing clinical scenarios using Gemini 3 Pro.
+ * Adheres to strict technical guidelines for @google/genai integration.
+ */
 export async function forgeNursingQuestions(
   subject: string, 
   count: number = 5, 
   difficulty: Difficulty = 'Intermediate',
   topic?: string
 ): Promise<Question[]> {
-  // Always obtain the API key from the environment at the exact moment of call
+  // Ensure we are using a fresh instance with the latest environment variables
   const apiKey = process.env.API_KEY;
   
   if (!apiKey) {
-    throw new Error("API_KEY_MISSING");
+    throw new Error("API_KEY_NOT_FOUND");
   }
 
-  // Use the mandatory initialization pattern
   const ai = new GoogleGenAI({ apiKey });
   
   const systemInstruction = `You are a world-class NCLEX-RN Item Writer and Senior Clinical Nurse Educator. 
-Your goal is to generate high-fidelity, scenario-based multiple choice questions for nursing students and professionals.
+Generate high-fidelity, scenario-based multiple choice questions for the following unit: ${subject}. 
 
-CONTEXT:
-Subject Area: ${subject}
-Difficulty Level: ${difficulty}
-Specific Focus: ${topic || 'General clinical scenarios'}
+SPECIFICATIONS:
+- Difficulty Level: ${difficulty}.
+- Clinical Focus: ${topic || 'General clinical scenarios'}.
+- Structure: Start each question with a clinical scenario (age, gender, setting, presenting problem).
+- Framework: Every question must be categorized into exactly one Nursing Process phase: Assessment, Diagnosis, Planning, Implementation, or Evaluation.
+- Rationale: Provide a 2-3 sentence clinical evidence-based explanation for the correct choice.
+- Distractors: Provide 3 plausible but incorrect clinical options.
 
-RULES:
-1. Scenario: Detailed clinical presentation with age, gender, and vital signs where relevant.
-2. Framework: Categorize each item into a single Nursing Process phase (Assessment, Diagnosis, Planning, Implementation, Evaluation).
-3. Quality: 1 correct answer, 3 plausible clinical distractors.
-4. Rationale: Provide a 2-3 sentence evidence-based explanation for the correct answer.
-5. Format: Strict JSON array output.`;
+OUTPUT FORMAT:
+Return only a JSON array of objects.`;
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview', // Use Pro for complex medical reasoning
-      contents: [{ parts: [{ text: `Generate ${count} high-fidelity nursing questions in JSON format.` }] }],
+      model: 'gemini-3-pro-preview', // Complex text task requires Pro model
+      contents: [{ parts: [{ text: `Generate ${count} nursing scenarios in JSON format.` }] }],
       config: {
         systemInstruction,
         responseMimeType: "application/json",
@@ -59,10 +61,10 @@ RULES:
       }
     });
 
-    const text = response.text;
-    if (!text) throw new Error("EMPTY_RESPONSE");
+    const jsonText = response.text;
+    if (!jsonText) throw new Error("EMPTY_AI_RESPONSE");
 
-    const parsed: any[] = JSON.parse(text.trim());
+    const parsed: any[] = JSON.parse(jsonText.trim());
 
     return parsed.map((q, index) => ({
       ...q,
@@ -72,7 +74,7 @@ RULES:
       practicedCount: 0
     }));
   } catch (error: any) {
-    console.error("Clinical Forge API Error:", error);
+    console.error("Gemini Forge Integration Error:", error);
     throw error;
   }
 }
