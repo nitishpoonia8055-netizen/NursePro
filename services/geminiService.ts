@@ -8,34 +8,35 @@ export async function forgeNursingQuestions(
   difficulty: Difficulty = 'Intermediate',
   topic?: string
 ): Promise<Question[]> {
-  // Always use a fresh instance to ensure the most up-to-date API key is used
+  // Always obtain the API key from the environment at the exact moment of call
   const apiKey = process.env.API_KEY;
   
   if (!apiKey) {
     throw new Error("API_KEY_MISSING");
   }
 
+  // Use the mandatory initialization pattern
   const ai = new GoogleGenAI({ apiKey });
   
   const systemInstruction = `You are a world-class NCLEX-RN Item Writer and Senior Clinical Nurse Educator. 
-Your goal is to generate high-fidelity, scenario-based multiple choice questions that adhere to the ADPIE nursing process framework.
-Current Subject: ${subject}.
-Target Difficulty: ${difficulty}.
-Specific Topic focus: ${topic || 'General clinical practice'}.
+Your goal is to generate high-fidelity, scenario-based multiple choice questions for nursing students and professionals.
 
-STRICT OUTPUT RULES:
-1. Scenario: Start with patient demographic and clinical presentation.
-2. ADPIE: Categorize each question into exactly one phase: Assessment, Diagnosis, Planning, Implementation, or Evaluation.
-3. Rationale: Provide a 2-3 sentence evidence-based explanation for the correct answer.
-4. Options: exactly 4 options, 1 correct, 3 plausible clinical distractors.
-5. JSON Format: Output a raw JSON array of objects.`;
+CONTEXT:
+Subject Area: ${subject}
+Difficulty Level: ${difficulty}
+Specific Focus: ${topic || 'General clinical scenarios'}
 
-  const prompt = `Generate ${count} scenario-based multiple choice questions for nursing practice.`;
+RULES:
+1. Scenario: Detailed clinical presentation with age, gender, and vital signs where relevant.
+2. Framework: Categorize each item into a single Nursing Process phase (Assessment, Diagnosis, Planning, Implementation, Evaluation).
+3. Quality: 1 correct answer, 3 plausible clinical distractors.
+4. Rationale: Provide a 2-3 sentence evidence-based explanation for the correct answer.
+5. Format: Strict JSON array output.`;
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview',
-      contents: [{ parts: [{ text: prompt }] }],
+      model: 'gemini-3-pro-preview', // Use Pro for complex medical reasoning
+      contents: [{ parts: [{ text: `Generate ${count} high-fidelity nursing questions in JSON format.` }] }],
       config: {
         systemInstruction,
         responseMimeType: "application/json",
@@ -59,7 +60,7 @@ STRICT OUTPUT RULES:
     });
 
     const text = response.text;
-    if (!text) throw new Error("EMPTY_AI_RESPONSE");
+    if (!text) throw new Error("EMPTY_RESPONSE");
 
     const parsed: any[] = JSON.parse(text.trim());
 
@@ -71,7 +72,7 @@ STRICT OUTPUT RULES:
       practicedCount: 0
     }));
   } catch (error: any) {
-    console.error("Gemini Forge Failure:", error);
+    console.error("Clinical Forge API Error:", error);
     throw error;
   }
 }
