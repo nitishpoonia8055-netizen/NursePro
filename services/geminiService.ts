@@ -12,14 +12,16 @@ export async function forgeNursingQuestions(
   difficulty: Difficulty = 'Intermediate',
   topic?: string
 ): Promise<Question[]> {
-  // Accessing the API key directly from process.env as per the strict SDK guidelines.
+  
+  // Directly access the environment variable. 
+  // If the error persists, check the environment configuration dashboard.
   const apiKey = process.env.API_KEY;
   
   if (!apiKey) {
-    throw new Error("Clinical Forge: API Key is not configured in the environment.");
+    throw new Error("Clinical Forge: API Key is missing from the environment variables. Please check your project settings.");
   }
 
-  // Initialize the AI client using the named parameter as required.
+  // Initialize the AI client using the named parameter as required by the latest SDK guidelines.
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
   const systemInstruction = `You are a world-class NCLEX-RN Item Writer. 
@@ -37,7 +39,7 @@ Format Requirements:
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: [{ parts: [{ text: `Forge ${count} nursing scenarios for ${subject} in JSON format.` }] }],
+      contents: [{ parts: [{ text: `Forge ${count} high-fidelity nursing scenarios for ${subject} in JSON format.` }] }],
       config: {
         systemInstruction,
         responseMimeType: "application/json",
