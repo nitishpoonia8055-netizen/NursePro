@@ -4,7 +4,7 @@ import { Question, AdpiePhase, Difficulty } from '../types.ts';
 
 /**
  * Forges nursing clinical scenarios using Gemini 3 Flash.
- * Relies on the pre-configured process.env.API_KEY.
+ * Securely accesses process.env.API_KEY provided by the environment.
  */
 export async function forgeNursingQuestions(
   subject: string, 
@@ -12,29 +12,32 @@ export async function forgeNursingQuestions(
   difficulty: Difficulty = 'Intermediate',
   topic?: string
 ): Promise<Question[]> {
+  // Accessing the API key directly from process.env as per the strict SDK guidelines.
   const apiKey = process.env.API_KEY;
   
   if (!apiKey) {
-    throw new Error("Clinical Forge environment key not detected.");
+    throw new Error("Clinical Forge: API Key is not configured in the environment.");
   }
 
-  const ai = new GoogleGenAI({ apiKey });
+  // Initialize the AI client using the named parameter as required.
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
   const systemInstruction = `You are a world-class NCLEX-RN Item Writer. 
-Generate high-fidelity, scenario-based multiple choice questions.
+Generate high-fidelity, scenario-based multiple choice questions for nursing professionals.
 
 Subject: ${subject}
 Difficulty: ${difficulty}
 Focus: ${topic || 'General clinical scenarios'}
 
-Format: JSON array. 
-Each object: {id, chapter, text, options[], correctIndex, explanation, adpiePhase}.
-Phases: Assessment, Diagnosis, Planning, Implementation, Evaluation.`;
+Format Requirements:
+- Output must be a JSON array.
+- Each question must follow the schema: {id, chapter, text, options[], correctIndex, explanation, adpiePhase}.
+- adpiePhase must be one of: Assessment, Diagnosis, Planning, Implementation, Evaluation.`;
 
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: [{ parts: [{ text: `Generate ${count} nursing scenarios in JSON format for ${subject}.` }] }],
+      contents: [{ parts: [{ text: `Forge ${count} nursing scenarios for ${subject} in JSON format.` }] }],
       config: {
         systemInstruction,
         responseMimeType: "application/json",
@@ -58,7 +61,7 @@ Phases: Assessment, Diagnosis, Planning, Implementation, Evaluation.`;
     });
 
     const jsonText = response.text;
-    if (!jsonText) throw new Error("Synthesis produced an empty response.");
+    if (!jsonText) throw new Error("AI Synthesis produced an empty response.");
 
     const parsed: any[] = JSON.parse(jsonText.trim());
 
@@ -70,7 +73,7 @@ Phases: Assessment, Diagnosis, Planning, Implementation, Evaluation.`;
       practicedCount: 0
     }));
   } catch (error: any) {
-    console.error("Forge Service Error:", error);
+    console.error("Clinical Forge Service Error:", error);
     throw error;
   }
 }
