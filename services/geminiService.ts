@@ -12,33 +12,32 @@ export async function forgeNursingQuestions(
   difficulty: Difficulty = 'Intermediate',
   topic?: string
 ): Promise<Question[]> {
-  // Ensure we are using a fresh instance with the latest environment variables
+  // Always create a fresh instance to ensure we use the key selected by the user
   const apiKey = process.env.API_KEY;
   
   if (!apiKey) {
     throw new Error("API_KEY_NOT_FOUND");
   }
 
-  const ai = new GoogleGenAI({ apiKey });
+  const ai = new GoogleGenAI({ apiKey: apiKey });
   
   const systemInstruction = `You are a world-class NCLEX-RN Item Writer and Senior Clinical Nurse Educator. 
-Generate high-fidelity, scenario-based multiple choice questions for the following unit: ${subject}. 
+Generate high-fidelity, scenario-based multiple choice questions for the following nursing unit: ${subject}. 
 
 SPECIFICATIONS:
 - Difficulty Level: ${difficulty}.
 - Clinical Focus: ${topic || 'General clinical scenarios'}.
-- Structure: Start each question with a clinical scenario (age, gender, setting, presenting problem).
 - Framework: Every question must be categorized into exactly one Nursing Process phase: Assessment, Diagnosis, Planning, Implementation, or Evaluation.
 - Rationale: Provide a 2-3 sentence clinical evidence-based explanation for the correct choice.
 - Distractors: Provide 3 plausible but incorrect clinical options.
 
 OUTPUT FORMAT:
-Return only a JSON array of objects.`;
+Return only a JSON array of objects. Do not include markdown formatting or extra text.`;
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview', // Complex text task requires Pro model
-      contents: [{ parts: [{ text: `Generate ${count} nursing scenarios in JSON format.` }] }],
+      model: 'gemini-3-pro-preview', // High-tier model for clinical reasoning
+      contents: [{ parts: [{ text: `Generate ${count} nursing scenarios in JSON format based on the clinical focus of ${topic || 'general nursing'}.` }] }],
       config: {
         systemInstruction,
         responseMimeType: "application/json",
@@ -74,7 +73,7 @@ Return only a JSON array of objects.`;
       practicedCount: 0
     }));
   } catch (error: any) {
-    console.error("Gemini Forge Integration Error:", error);
+    console.error("Clinical Forge Integration Error:", error);
     throw error;
   }
 }
