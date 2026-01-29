@@ -67,7 +67,7 @@ const AIGenerator: React.FC<AIGeneratorProps> = ({ onGenerated, setView }) => {
         setHasKey(false);
         setError({
           message: isEntityNotFound 
-            ? "Resource not found. Your selected project may not have Gemini API enabled or belongs to an inactive billing account. Please select a valid paid key."
+            ? "Resource not found. Your selected project may not have Gemini API enabled or belongs to an inactive billing account. Please select a valid key."
             : "Authentication required. A valid Gemini API key is needed to forge clinical scenarios.",
           needsKey: true
         });
@@ -173,7 +173,7 @@ const AIGenerator: React.FC<AIGeneratorProps> = ({ onGenerated, setView }) => {
           <Sparkles size={32} />
         </div>
         <h1 className="text-2xl lg:text-4xl font-extrabold tracking-tight mb-2">Clinical Forge</h1>
-        <p className="text-sm text-zinc-500 max-w-xs mx-auto font-medium">Forge high-fidelity nursing scenarios tailored to your clinical focus.</p>
+        <p className="text-sm text-zinc-500 max-w-xs mx-auto font-medium">Rapid clinical scenario forging powered by Gemini 3 Flash.</p>
       </div>
 
       <div className="bg-white dark:bg-zinc-900 p-6 lg:p-12 rounded-[40px] border border-zinc-100 dark:border-zinc-800 shadow-sm space-y-8">
@@ -253,15 +253,15 @@ const AIGenerator: React.FC<AIGeneratorProps> = ({ onGenerated, setView }) => {
           disabled={isGenerating} 
           className="w-full h-14 bg-primary text-white rounded-2xl font-bold text-base flex items-center justify-center gap-3 shadow-xl shadow-primary/20 active:scale-[0.98] disabled:opacity-50 transition-all"
         >
-          {isGenerating ? <><Loader2 className="animate-spin" size={20} /> Clinical Synthesis...</> : <><Sparkles size={20} /> Forge Scenarios</>}
+          {isGenerating ? <><Loader2 className="animate-spin" size={20} /> High-Speed Synthesis...</> : <><Sparkles size={20} /> Forge Scenarios</>}
         </button>
         
         <div className="flex flex-col items-center gap-2 pt-4 border-t border-zinc-100 dark:border-zinc-800">
           <p className="text-[10px] text-zinc-400 text-center font-bold uppercase tracking-widest">
-            Model: Gemini 3 Pro
+            Model: Gemini 3 Flash (Optimized)
           </p>
           <button onClick={handleOpenKeySelector} className="text-[10px] text-primary hover:underline font-bold transition-all">
-            Switch Forge Key
+            Manage Forge Key
           </button>
         </div>
       </div>

@@ -3,7 +3,7 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { Question, AdpiePhase, Difficulty } from '../types.ts';
 
 /**
- * Forges nursing clinical scenarios using Gemini 3 Pro.
+ * Forges nursing clinical scenarios using Gemini 3 Flash.
  * Adheres to strict technical guidelines for @google/genai integration.
  */
 export async function forgeNursingQuestions(
@@ -39,8 +39,8 @@ RULES:
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview', // Pro model is best for complex clinical reasoning
-      contents: [{ parts: [{ text: `Forge ${count} high-fidelity nursing scenarios in JSON format.` }] }],
+      model: 'gemini-3-flash-preview', // Switched to Flash for high-speed, high-quality generation
+      contents: [{ parts: [{ text: `Forge ${count} high-fidelity nursing scenarios in JSON format based on the clinical area of ${subject}.` }] }],
       config: {
         systemInstruction,
         responseMimeType: "application/json",
