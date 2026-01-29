@@ -12,32 +12,35 @@ export async function forgeNursingQuestions(
   difficulty: Difficulty = 'Intermediate',
   topic?: string
 ): Promise<Question[]> {
-  // Always create a fresh instance to ensure we use the key selected by the user
+  // Always obtain the API key from the environment at the moment of call
   const apiKey = process.env.API_KEY;
   
   if (!apiKey) {
-    throw new Error("API_KEY_NOT_FOUND");
+    throw new Error("API_KEY_MISSING");
   }
 
+  // Create a new instance right before the call to ensure the latest key is used
   const ai = new GoogleGenAI({ apiKey: apiKey });
   
   const systemInstruction = `You are a world-class NCLEX-RN Item Writer and Senior Clinical Nurse Educator. 
-Generate high-fidelity, scenario-based multiple choice questions for the following nursing unit: ${subject}. 
+Your goal is to generate high-fidelity, scenario-based multiple choice questions for nursing students.
 
-SPECIFICATIONS:
-- Difficulty Level: ${difficulty}.
-- Clinical Focus: ${topic || 'General clinical scenarios'}.
-- Framework: Every question must be categorized into exactly one Nursing Process phase: Assessment, Diagnosis, Planning, Implementation, or Evaluation.
-- Rationale: Provide a 2-3 sentence clinical evidence-based explanation for the correct choice.
-- Distractors: Provide 3 plausible but incorrect clinical options.
+CONTEXT:
+Subject Area: ${subject}
+Difficulty Level: ${difficulty}
+Specific Focus: ${topic || 'General clinical scenarios'}
 
-OUTPUT FORMAT:
-Return only a JSON array of objects. Do not include markdown formatting or extra text.`;
+RULES:
+1. Scenario: Detailed clinical presentation with relevant vital signs or assessment findings.
+2. Framework: Categorize each item into a single Nursing Process phase (Assessment, Diagnosis, Planning, Implementation, Evaluation).
+3. Quality: 1 correct answer, 3 plausible clinical distractors.
+4. Rationale: Provide an evidence-based explanation for the correct answer.
+5. Format: Strict JSON array output.`;
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview', // High-tier model for clinical reasoning
-      contents: [{ parts: [{ text: `Generate ${count} nursing scenarios in JSON format based on the clinical focus of ${topic || 'general nursing'}.` }] }],
+      model: 'gemini-3-pro-preview', // Pro model is best for complex clinical reasoning
+      contents: [{ parts: [{ text: `Forge ${count} high-fidelity nursing scenarios in JSON format.` }] }],
       config: {
         systemInstruction,
         responseMimeType: "application/json",
@@ -61,7 +64,7 @@ Return only a JSON array of objects. Do not include markdown formatting or extra
     });
 
     const jsonText = response.text;
-    if (!jsonText) throw new Error("EMPTY_AI_RESPONSE");
+    if (!jsonText) throw new Error("AI_RESPONSE_EMPTY");
 
     const parsed: any[] = JSON.parse(jsonText.trim());
 
@@ -73,7 +76,7 @@ Return only a JSON array of objects. Do not include markdown formatting or extra
       practicedCount: 0
     }));
   } catch (error: any) {
-    console.error("Clinical Forge Integration Error:", error);
+    console.error("Clinical Forge API Error:", error);
     throw error;
   }
 }
